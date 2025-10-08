@@ -1,0 +1,5 @@
+Layer 1 (ESP32) → Layer 2 → Layer 3 → Layer 4 → Layer 5
+     ↓              ↓         ↓         ↓         ↓
+Sensors → WiFi/MQTT → Cloud DB → Emotion → Mobile App
+     ↑              ↑         ↑         ↑         ↑
+Actuators ← Commands ← API ← Decisions ← User Input

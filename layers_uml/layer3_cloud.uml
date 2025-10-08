@@ -1,0 +1,29 @@
+// =============================================
+// LAYER 3 - CLOUD & DATA MANAGEMENT
+// =============================================
+
+class DataIngestService {
+    - mqttClient: MQTTClient
+    - apiEndpoint: String
+    
+    + onMessageReceived(topic: String, payload: String): void
+    + parseSensorData(rawData: String): SensorData
+    + forwardToDatabase(data: SensorData): void
+}
+
+class DatabaseManager {
+    - dbConnection: Connection
+    - plantsCollection: Collection
+    
+    + saveReading(deviceId: String, data: SensorData): boolean
+    + getPlantState(plantId: String): PlantState
+    + updateEmotionState(plantId: String, emotion: Emotion): void
+}
+
+class APIService {
+    - basePath: String
+    - port: int
+    
+    + GET /plants/{id}/state(): PlantState
+    + POST /plants/{id}/command(): CommandResponse
+}
