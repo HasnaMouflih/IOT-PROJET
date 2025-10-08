@@ -1,0 +1,43 @@
+// =============================================
+// LAYER 1 - HARDWARE & DEVICE (ESP32)
+// =============================================
+
+class SensorManager {
+    - soilSensorPin: int
+    - tempSensorPin: int  
+    - lightSensorPin: int
+    - humiditySensorPin: int
+    
+    + readSoilMoisture(): float
+    + readTemperature(): float
+    + readLightIntensity(): float
+    + readHumidity(): float
+    + calibrateSensors(): void
+}
+
+class ActuatorManager {
+    - pumpRelayPin: int
+    - ledPin: int
+    - fanPin: int
+    - currentColor: LEDColor
+    - isPumpRunning: boolean
+    
+    + pumpOn(duration: int): void
+    + pumpOff(): void
+    + setLEDColor(color: LEDColor): void
+    + setFanSpeed(speed: int): void
+    + getPumpStatus(): boolean
+}
+
+class DeviceController {
+    - sensorManager: SensorManager
+    - actuatorManager: ActuatorManager
+    - deviceId: String
+    - lastReadingTime: long
+    
+    + collectSensorData(): JSONObject
+    + executeCommand(command: Command): void
+    + parseCommandString(commandStr: String): Command
+    + setupDevice(): void
+    + loop(): void
+}

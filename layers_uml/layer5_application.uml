@@ -1,0 +1,27 @@
+// =============================================
+// LAYER 5 - APPLICATION & VISUALIZATION
+// =============================================
+
+class CloudRepository {
+    - baseURL: String
+    - apiKey: String
+    
+    + getPlantData(plantId: String): PlantState
+    + sendCommand(plantId: String, command: Command): boolean
+}
+
+class PlantViewModel {
+    - plantState: PlantState
+    - isLoading: boolean
+    
+    + refreshData(): void
+    + sendWaterCommand(): void
+    + getCurrentEmotion(): Emotion
+}
+
+class UIComponents {
+    - currentScreen: Screen
+    
+    + showEmotion(emotion: Emotion): void
+    + updateSensorValues(data: PlantState): void
+}
