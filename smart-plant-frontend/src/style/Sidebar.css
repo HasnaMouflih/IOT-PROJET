@@ -1,0 +1,55 @@
+.sidebar {
+  width: 250px;
+  background-color: #8ABB6C;
+  color: #fff;
+  transition: width 0.3s;
+  padding: 20px;
+}
+
+.sidebar.closed {
+  width: 60px;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.leaf-icon {
+  font-size: 1.8rem;
+  color: #fff;
+}
+
+.logo-text {
+  margin-left: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Menu items */
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 15px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar li svg {
+  margin-right: 10px;
+}
+
+.sidebar li.active {
+  background-color: #1e5d38;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.logout {
+  margin-top: 30px;
+}
