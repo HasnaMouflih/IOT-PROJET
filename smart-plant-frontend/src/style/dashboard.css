@@ -1,0 +1,39 @@
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Main content */
+.dashboard-main {
+  flex: 1;
+  padding: 30px;
+  transition: margin-left 0.3s;
+}
+
+.dashboard-main.collapsed {
+  margin-left: 60px;
+}
+
+.toggle-btn {
+  background-color: #2b7a4b;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+/* Cards */
+.card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.emojis svg {
+  font-size: 2rem;
+  margin: 0 10px;
+}
