@@ -1,59 +1,50 @@
 import React, { useState } from "react";
-import Sidebar from "./Sidebar";
-import PlantStateCards from "./PlantStateCards";
+import Sidebar from "../components/Sidebar";
+import PlantStatusCard from "../components/PlantStatusCard";
+import RealtimeMeasureCard from "../components/RealtimeMeasureCard";
+import ChartsSection from "../components/ChartsSection";
 import "../style/dashboard.css";
 
 function Dashboard() {
-  const [activeTab, setActiveTab] = useState("etat");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeItem, setActiveItem] = useState("plant"); // état actif
 
-  const handleTabClick = (tab) => {
-    setActiveTab(tab);
+  const renderContent = () => {
+    switch (activeItem) {
+      case "plant":
+        return (
+          <div className="dashboard-content">
+            <div className="measures-container">
+              <RealtimeMeasureCard title="Humidité" value="45%" icon="FaTint" color="#4ECDC4" backcolor="#DFF2EB" />
+              <RealtimeMeasureCard title="Température" value="25°C" icon="FaThermometerHalf" color="#FF6B6B" backcolor="#FCEF91" />
+              <RealtimeMeasureCard title="Lumière" value="800 lux" icon="FaSun" color="#FFD93D" backcolor="#FCF9EA" />
+            </div>
+            <PlantStatusCard humidity={25} temperature={35} light={150} />
+            <ChartsSection />
+          </div>
+        );
+      case "history":
+        return (
+          <div className="dashboard-content">
+            <h2>Historique des mesures</h2>
+            <p>Les données historiques de la plante seront affichées ici.</p>
+          </div>
+        );
+      case "settings":
+        return (
+          <div className="dashboard-content">
+            <h2>Paramètres</h2>
+            <p>Modifier les réglages de la plante et de l'application.</p>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="dashboard-container">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={handleTabClick}
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
-
-      <main className={`dashboard-main ${sidebarOpen ? "" : "collapsed"}`}>
-        <button
-          className="toggle-btn"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          ☰
-        </button>
-
-        <h1>Tableau de bord SmartPlant 🌿</h1>
-
-        {activeTab === "etat" && (
-          <PlantStateCards
-            humidity={45}
-            temperature={25}
-            light={800}
-            plantMood="heureuse"
-            aiMessage="La plante aura besoin d’eau dans 2 heures 💧"
-          />
-        )}
-
-        {activeTab === "historique" && (
-          <section className="card">
-            <h2>Historique des mesures</h2>
-            <p>Graphiques et tableaux d’historique ici.</p>
-          </section>
-        )}
-
-        {activeTab === "parametres" && (
-          <section className="card">
-            <h2>Paramètres</h2>
-            <p>Modifier fréquence d’envoi, unités, ajouter/supprimer plante...</p>
-          </section>
-        )}
-      </main>
+      <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
+      <main className="dashboard-main">{renderContent()}</main>
     </div>
   );
 }
