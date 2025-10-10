@@ -1,44 +1,43 @@
 import React from "react";
+import { FaLeaf, FaChartLine, FaCog, FaSignOutAlt } from "react-icons/fa";
 import "../style/Sidebar.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faLeaf,
-  faChartLine,
-  faCog,
-  faSignOutAlt
-} from "@fortawesome/free-solid-svg-icons";
+import PersonImage from "../assets/person.png"; // ton image PNG sans background
 
-function Sidebar({ activeTab, setActiveTab, isOpen }) {
+function Sidebar({ activeItem, setActiveItem }) {
   return (
-    <aside className={`sidebar ${isOpen ? "open" : "closed"}`}>
+    <aside className="sidebar">
       <div className="sidebar-logo">
-        <FontAwesomeIcon icon={faLeaf} className="leaf-icon" />
-        {isOpen && <span className="logo-text">SmartPlant</span>}
+        <FaLeaf /> <span>SmartPlant</span>
       </div>
 
-      <ul>
+      <ul className="sidebar-menu">
         <li
-          className={activeTab === "etat" ? "active" : ""}
-          onClick={() => setActiveTab("etat")}
+          className={activeItem === "plant" ? "active" : ""}
+          onClick={() => setActiveItem("plant")}
         >
-          <FontAwesomeIcon icon={faLeaf} /> {isOpen && "État de la plante"}
+          <FaChartLine /> État de la plante
         </li>
         <li
-          className={activeTab === "historique" ? "active" : ""}
-          onClick={() => setActiveTab("historique")}
+          className={activeItem === "history" ? "active" : ""}
+          onClick={() => setActiveItem("history")}
         >
-          <FontAwesomeIcon icon={faChartLine} /> {isOpen && "Historique des mesures"}
+          <FaChartLine /> Historique
         </li>
         <li
-          className={activeTab === "parametres" ? "active" : ""}
-          onClick={() => setActiveTab("parametres")}
+          className={activeItem === "settings" ? "active" : ""}
+          onClick={() => setActiveItem("settings")}
         >
-          <FontAwesomeIcon icon={faCog} /> {isOpen && "Paramètres"}
+          <FaCog /> Paramètres
         </li>
-        <li className="logout">
-          <FontAwesomeIcon icon={faSignOutAlt} /> {isOpen && "Déconnexion"}
+        <li>
+          <FaSignOutAlt /> Déconnexion
         </li>
       </ul>
+
+      {/* Image en bas */}
+      <div className="sidebar-bottom-image">
+        <img src={PersonImage} alt="Person" />
+      </div>
     </aside>
   );
 }
