@@ -48,7 +48,7 @@ class SensorData:
 # DatabaseManager
 # ==========================
 class DatabaseManager:
-    def __init__(self, service_account_file="serviceAccountKey.json"):
+    def __init__(self, service_account_file=""):#serviceAccountKey.json
         try:
             cred = credentials.Certificate(service_account_file)
             if not firebase_admin._apps:
