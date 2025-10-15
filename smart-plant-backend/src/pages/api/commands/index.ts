@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { sendCommandToPlant } from "../../../services/plantServices";
+import applyCors from "../../../utils/cors";
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  await applyCors(req, res);
+
   if (req.method === "POST") {
     const { plantId, command } = req.body as { plantId?: string; command?: string };
 
