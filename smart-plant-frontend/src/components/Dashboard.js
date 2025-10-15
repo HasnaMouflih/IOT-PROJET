@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import PlantStatusCard from "../components/PlantStatusCard";
 import RealtimeMeasureCard from "../components/RealtimeMeasureCard";
@@ -6,22 +6,99 @@ import ChartsSection from "../components/ChartsSection";
 import "../style/dashboard.css";
 
 function Dashboard() {
-  const [activeItem, setActiveItem] = useState("plant"); // état actif
+  const [activeItem, setActiveItem] = useState("plant");
+  const [selectedPlant, setSelectedPlant] = useState("PLANT-001");
+  const [plants, setPlants] = useState([]);
+  const [plantData, setPlantData] = useState(null);
+
+  
+  useEffect(() => {
+    const fetchPlants = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/plants");
+        const data = await response.json();
+        setPlants(data);
+      } catch (error) {
+        console.error("Erreur lors du chargement des plantes:", error);
+      }
+    };
+    fetchPlants();
+  }, []);
+
+  useEffect(() => {
+    const fetchPlantData = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/plants?id=${selectedPlant}`);
+        const data = await response.json();
+        setPlantData(data);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données de la plante:", error);
+      }
+    };
+    fetchPlantData();
+  }, [selectedPlant]);
 
   const renderContent = () => {
     switch (activeItem) {
       case "plant":
         return (
           <div className="dashboard-content">
-            <div className="measures-container">
-              <RealtimeMeasureCard title="Humidité" value="45%" icon="FaTint" color="#4ECDC4" backcolor="#DFF2EB" />
-              <RealtimeMeasureCard title="Température" value="25°C" icon="FaThermometerHalf" color="#FF6B6B" backcolor="#FCEF91" />
-              <RealtimeMeasureCard title="Lumière" value="800 lux" icon="FaSun" color="#FFD93D" backcolor="#FCF9EA" />
+            {/* ✅ Plant Selector */}
+            <div className="plant-selector">
+              <label>Plante: </label>
+              <select
+                onChange={(e) => setSelectedPlant(e.target.value)}
+                value={selectedPlant}
+              >
+                {plants.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <PlantStatusCard humidity={25} temperature={35} light={150} />
-            <ChartsSection />
+
+            {/* ✅ Display when data is loaded */}
+            {plantData ? (
+              <>
+                <div className="measures-container">
+                  <RealtimeMeasureCard
+                    title="Humidité"
+                    value={plantData.humidity + "%"}
+                    icon="FaTint"
+                    color="#4ECDC4"
+                    backcolor="#DFF2EB"
+                  />
+                  <RealtimeMeasureCard
+                    title="Température"
+                    value={plantData.temperature + "°C"}
+                    icon="FaThermometerHalf"
+                    color="#FF6B6B"
+                    backcolor="#FCEF91"
+                  />
+                  <RealtimeMeasureCard
+                    title="Lumière"
+                    value={plantData.light + " lux"}
+                    icon="FaSun"
+                    color="#FFD93D"
+                    backcolor="#FCF9EA"
+                  />
+                </div>
+
+                <PlantStatusCard
+                  humidity={plantData.humidity}
+                  temperature={plantData.temperature}
+                  light={plantData.light}
+                />
+
+                <ChartsSection plantData={plantData} />
+              </>
+            ) : (
+              <p>Chargement des données...</p>
+            )}
           </div>
         );
+
       case "history":
         return (
           <div className="dashboard-content">
@@ -29,6 +106,7 @@ function Dashboard() {
             <p>Les données historiques de la plante seront affichées ici.</p>
           </div>
         );
+
       case "settings":
         return (
           <div className="dashboard-content">
@@ -36,6 +114,7 @@ function Dashboard() {
             <p>Modifier les réglages de la plante et de l'application.</p>
           </div>
         );
+
       default:
         return null;
     }
