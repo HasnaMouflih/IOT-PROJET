@@ -185,3 +185,37 @@
     padding: 20px 10px;
   }
 }
+
+.plant-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* slightly more breathing space */
+  margin-bottom: 1.5rem; /* more separation from cards */
+  font-weight: 600; /* semi-bold */
+  font-size: 1rem;
+  color: #333; /* subtle, professional text color */
+}
+
+.plant-selector label {
+  font-weight: 600;
+  color: #555;
+}
+
+.plant-selector select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  color: #333;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.plant-selector select:focus {
+  outline: none;
+  border-color: #4ECDC4; /* highlight color on focus */
+  box-shadow: 0 0 5px rgba(78, 205, 196, 0.5);
+}
+
+
