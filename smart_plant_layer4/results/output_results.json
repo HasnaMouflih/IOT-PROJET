@@ -1,0 +1,47 @@
+[
+    {
+        "deviceId": "Plant_01112",
+        "temperature": 28.5,
+        "humidity": 75,
+        "lightLevel": 600,
+        "emotion": "happy 😊 (en bonne santé)",
+        "action": "NONE",
+        "optimal_environment": true
+    },
+    {
+        "deviceId": "Plant_001113",
+        "temperature": 30.0,
+        "humidity": 70,
+        "lightLevel": 500,
+        "emotion": "sad 😢 (assoiffée)",
+        "action": "WATER",
+        "optimal_environment": false
+    },
+    {
+        "deviceId": "Plant_01114",
+        "temperature": 38.0,
+        "humidity": 60,
+        "lightLevel": 650,
+        "emotion": "tired 🥵 (trop chaud)",
+        "action": "NONE",
+        "optimal_environment": false
+    },
+    {
+        "deviceId": "Plant_01115",
+        "temperature": 25.0,
+        "humidity": 55,
+        "lightLevel": 300,
+        "emotion": "sad 😢 (assoiffée)",
+        "action": "WATER",
+        "optimal_environment": false
+    },
+    {
+        "deviceId": "Plant_01116",
+        "temperature": 32.0,
+        "humidity": 80,
+        "lightLevel": 700,
+        "emotion": "happy 😊 (en bonne santé)",
+        "action": "WATER",
+        "optimal_environment": false
+    }
+]
