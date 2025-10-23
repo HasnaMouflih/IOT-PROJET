@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === "GET") {
     const { id } = req.query;
 
-    // ✅ If an ID is provided, return one plant
+  
     if (id && typeof id === "string") {
       const plant = await getPlantById(id);
       if (!plant) {
@@ -18,12 +18,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json(plant);
     }
 
-    // ✅ Otherwise, return all plants
+   
     const plants = await getAllPlants();
     return res.status(200).json(plants);
   }
 
-  // ✅ Handle unsupported methods
+  
   res.setHeader("Allow", ["GET"]);
   return res.status(405).end(`Method ${req.method} Not Allowed`);
 }

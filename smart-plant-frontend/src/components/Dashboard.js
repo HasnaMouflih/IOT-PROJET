@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import CircularProgress from "@mui/material/CircularProgress";
 import Sidebar from "../components/Sidebar";
 import PlantStatusCard from "../components/PlantStatusCard";
 import RealtimeMeasureCard from "../components/RealtimeMeasureCard";
 import ChartsSection from "../components/ChartsSection";
+import CommandPanel from "../components/CommandPanel"
 import "../style/dashboard.css";
 
 function Dashboard() {
@@ -15,7 +17,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchPlants = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/plants");
+        const response = await fetch("http://localhost:5000/api/plants");
         const data = await response.json();
         setPlants(data);
       } catch (error) {
@@ -28,7 +30,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchPlantData = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/plants?id=${selectedPlant}`);
+        const response = await fetch(`http://localhost:5000/api/plants?id=${selectedPlant}`);
         const data = await response.json();
         setPlantData(data);
       } catch (error) {
@@ -43,7 +45,7 @@ function Dashboard() {
       case "plant":
         return (
           <div className="dashboard-content">
-            {/* ✅ Plant Selector */}
+         
             <div className="plant-selector">
               <label>Plante: </label>
               <select
@@ -58,7 +60,7 @@ function Dashboard() {
               </select>
             </div>
 
-            {/* ✅ Display when data is loaded */}
+           
             {plantData ? (
               <>
                 <div className="measures-container">
@@ -84,17 +86,25 @@ function Dashboard() {
                     backcolor="#FCF9EA"
                   />
                 </div>
+          
 
-                <PlantStatusCard
-                  humidity={plantData.humidity}
-                  temperature={plantData.temperature}
-                  light={plantData.light}
-                />
+                <div className="plant-overview">
+              <PlantStatusCard
+                humidity={plantData.humidity}
+                temperature={plantData.temperature}
+                light={plantData.light}
+              />
+
+            <CommandPanel plants={plants} selectedPlant={selectedPlant} />
+            </div>
+
 
                 <ChartsSection plantData={plantData} />
               </>
             ) : (
-              <p>Chargement des données...</p>
+              <div className="loading-spinner">
+                <CircularProgress size={32} color="success" />
+              </div>
             )}
           </div>
         );
