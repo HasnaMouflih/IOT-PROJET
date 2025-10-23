@@ -18,8 +18,8 @@ export const mockPlants: Record<string, Plant> = {
   "PLANT-001": {
     id: "PLANT-001",
     name: "Aloe Vera 🌿",
-    humidity: 45,
-    temperature: 25,
+    humidity: 46,
+    temperature: 26,
     light: 800,
     history: [
       { time: "10h", humidity: 40, temperature: 22, light: 700 },
@@ -57,7 +57,7 @@ export const mockPlants: Record<string, Plant> = {
     name: "Peace Lily 🌸",
     humidity: 60,
     temperature: 23,
-    light: 400,
+    light: 500,
     history: [
       { time: "10h", humidity: 58, temperature: 22, light: 350 },
       { time: "11h", humidity: 59, temperature: 23, light: 380 },
