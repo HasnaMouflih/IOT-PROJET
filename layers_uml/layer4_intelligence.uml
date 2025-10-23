@@ -1,0 +1,18 @@
+// =============================================
+// LAYER 4 - INTELLIGENCE & EMOTIONAL ENGINE
+// =============================================
+
+class EmotionEngine {
+    - emotionRules: Map<String, Rule>
+    
+    + computeEmotion(sensorData: SensorData): Emotion
+    + evaluateHappiness(light: float, temp: float): int
+    + evaluateThirst(soilMoisture: float): int
+}
+
+class DecisionMaker {
+    - autoMode: boolean
+    
+    + shouldWaterPlant(sensorData: SensorData): boolean
+    + isEnvironmentOptimal(sensorData: SensorData): boolean
+}

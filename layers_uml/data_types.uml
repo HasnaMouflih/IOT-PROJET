@@ -1,0 +1,59 @@
+// =============================================
+// DATA TYPES & ENUMS (Shared across all layers)
+// =============================================
+
+enum LEDColor {
+    BLUE("#0000FF"),
+    GREEN("#00FF00"), 
+    RED("#FF0000"),
+    YELLOW("#FFFF00"), 
+    PURPLE("#800080"),
+    OFF("#000000");
+    
+    - hexCode: String
+    + getHex(): String
+    + fromString(colorName: String): LEDColor
+}
+
+enum Emotion {
+    HAPPY, THIRSTY, COLD, HOT, DARK, LONELY, SICK
+}
+
+enum CommandType {
+    WATER_NOW, TOGGLE_AUTO_WATERING, SET_LED_COLOR, SET_FAN_SPEED
+}
+
+enum HealthStatus {
+    OPTIMAL, WARNING, CRITICAL, UNKNOWN
+}
+
+class SensorData {
+    - deviceId: String
+    - soilMoisture: float    // 0-100%
+    - temperature: float     // Celsius  
+    - lightLevel: float      // 0-100%
+    - humidity: float        // 0-100%
+    - timestamp: long
+    
+    + toJSON(): JSONObject
+}
+
+class PlantState {
+    - plantId: String
+    - currentData: SensorData
+    - emotion: Emotion
+    - healthStatus: HealthStatus
+    - lastWatered: long
+    - autoWatering: boolean
+}
+
+class Command {
+    - plantId: String
+    - type: CommandType
+    - parameters: Map<String, Object>
+    - timestamp: long
+    
+    + getDuration(): int
+    + getColor(): String  
+    + getSpeed(): int
+}

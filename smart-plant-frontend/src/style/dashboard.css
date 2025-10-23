@@ -1,0 +1,268 @@
+/* Conteneur principal */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px; /* espace entre sections */
+}
+
+/* Contenu du dashboard */
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 100%;
+}
+
+/* Mesures en haut */
+.measures-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Cartes de mesures */
+.measure-card {
+  flex: 1 1 180px;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 25px;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.measure-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.measure-card h3 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  color: #2E3A59;
+}
+
+.measure-card p {
+  font-size: 1.1rem;
+  color: #2E3A59;
+}
+
+.plant-status-card {
+  flex: 1 1 300px;  /* minimum 400px, peut s'étendre */
+  max-width: 420px;  /* limite maximale */
+  margin: 0;         /* supprime le margin auto */
+  padding: 40px 0px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff, #ffffff);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+
+.plant-status-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.plant-status-card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2E3A59;
+  margin-bottom: 20px;
+}
+
+.status-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.plant-image {
+  width: 160px;
+  max-width: 80%;
+  height: auto;
+  object-fit: contain;
+  animation: bounce 2s infinite;
+  border-radius: 10px;
+}
+
+.status-content p {
+  font-size: 1.2rem;
+  color: #4a4a4a;
+  font-weight: 500;
+  max-width: 300px;
+}
+
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #4a4a4a;
+}
+
+
+/* Animation */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Charts */
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.charts-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #333;
+  text-align: center;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-card {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.chart-card h3 {
+  margin-bottom: 0.8rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #444;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .measures-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .dashboard-main {
+    padding: 20px 10px;
+  }
+}
+
+.plant-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* slightly more breathing space */
+  margin-bottom: 1.5rem; /* more separation from cards */
+  font-weight: 600; /* semi-bold */
+  font-size: 1rem;
+  color: #333; /* subtle, professional text color */
+}
+
+.plant-selector label {
+  font-weight: 600;
+  color: #555;
+}
+
+.plant-selector select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  color: #333;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.plant-selector select:focus {
+  outline: none;
+  border-color: #4ECDC4; /* highlight color on focus */
+  box-shadow: 0 0 5px rgba(78, 205, 196, 0.5);
+}
+
+.plant-overview {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  align-items: flex-start; /* aligne les cartes en haut */
+  flex-wrap: wrap;          /* les cartes passent en colonne sur petit écran */
+}
+
+.command-panel-card {
+  flex: 1 1 300px;
+  max-width: 400px;
+  padding: 30px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #ffffff, #ffffff);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.command-panel-card h3  {
+  color: #2E3A59
+ 
+}
+
+.command-buttons {
+  display: flex;
+  flex-direction: column; /* empile verticalement */
+  gap: 15px;              /* espace entre les boutons */
+  margin-top: 20px;
+}
+
+.command-buttons button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color:#2E3A59;
+  background-color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.command-buttons button:hover {
+  background-color: #b9e2db; /* couleur un peu plus foncée au hover */
+  transform: translateY(-2px);
+}
+
+.command-buttons button:active {
+  transform: translateY(0);
+}

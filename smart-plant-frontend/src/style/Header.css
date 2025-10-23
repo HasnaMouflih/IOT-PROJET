@@ -1,0 +1,55 @@
+/* === HEADER === */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2b7a4b;
+}
+
+.nav-links {
+  display: flex;
+  gap: 25px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover {
+  color: #2b7a4b;
+}
+
+.header-icons button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  margin-left: 15px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.header-icons button:hover {
+  transform: scale(1.2);
+}
+.logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* espace entre l'icône et le texte */
+}
+

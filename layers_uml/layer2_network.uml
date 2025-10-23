@@ -1,0 +1,36 @@
+// =============================================
+// LAYER 2 - NETWORK & COMMUNICATION  
+// =============================================
+
+class NetworkManager {
+    - wifiSSID: String
+    - wifiPassword: String
+    - mqttBroker: String
+    - mqttPort: int
+    - isConnected: boolean
+    - reconnectAttempts: int
+    
+    + connectWiFi(): boolean
+    + connectMQTT(): boolean
+    + checkConnection(): boolean
+    + getConnectionStatus(): String
+}
+
+class DataPublisher {
+    - telemetryTopic: String
+    - qosLevel: int
+    - lastPublishTime: long
+    
+    + publishTelemetry(data: JSONObject): boolean
+    + setTopic(topic: String): void
+}
+
+class CommandSubscriber {
+    - commandTopic: String
+    - messageCallback: Function
+    - lastCommandTime: long
+    
+    + subscribeToCommands(): void
+    + onMessageReceived(topic: String, payload: String): void
+    + setCallback(callback: Function): void
+}

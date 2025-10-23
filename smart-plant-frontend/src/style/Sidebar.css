@@ -1,0 +1,58 @@
+.sidebar {
+  width: 240px;
+  background-color: #e8f5e9;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #c8e6c9;
+  height: 200vh; /* occupe tout l'écran verticalement */
+}
+
+.sidebar-logo {
+  font-size: 1.5rem;
+  color: #49994d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 30px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-menu li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background 0.3s;
+  color: #2e7d32;
+}
+
+.sidebar-menu li:hover,
+.sidebar-menu li.active {
+  background-color: #c8e6c9;
+}
+
+/* Conteneur de l'image en bas */
+.sidebar-bottom-image {
+  margin-top: auto;           /* pousse l'image vers le bas */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 0;            /* un peu d'espace autour */
+}
+
+.sidebar-bottom-image img {
+  width: 100%;                 /* largeur raisonnable */
+  height: auto;               /* garde les proportions */
+  object-fit: contain;
+  border-radius: 10px;        /* optionnel, coins arrondis */
+}
