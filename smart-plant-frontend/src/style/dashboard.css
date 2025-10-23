@@ -62,21 +62,20 @@
 }
 
 .plant-status-card {
+  flex: 1 1 300px;  /* minimum 400px, peut s'étendre */
+  max-width: 420px;  /* limite maximale */
+  margin: 0;         /* supprime le margin auto */
+  padding: 40px 0px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 40px 30px;
   border-radius: 20px;
-  background: linear-gradient(145deg, #e0f7e9, #ffffff);
+  background: linear-gradient(145deg, #ffffff, #ffffff);
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  /* largeur plus grande */
-  width: 80%;        /* occupe 90% de l’espace disponible */
-  max-width: 700px;  /* limite maximale pour ne pas dépasser l’écran */
-  margin: 0 auto;    /* centre la carte */
 }
+
 
 
 .plant-status-card:hover {
@@ -85,9 +84,9 @@
 }
 
 .plant-status-card h2 {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #2e7d32;
+  color: #2E3A59;
   margin-bottom: 20px;
 }
 
@@ -218,4 +217,52 @@
   box-shadow: 0 0 5px rgba(78, 205, 196, 0.5);
 }
 
+.plant-overview {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  align-items: flex-start; /* aligne les cartes en haut */
+  flex-wrap: wrap;          /* les cartes passent en colonne sur petit écran */
+}
 
+.command-panel-card {
+  flex: 1 1 300px;
+  max-width: 400px;
+  padding: 30px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #ffffff, #ffffff);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.command-panel-card h3  {
+  color: #2E3A59
+ 
+}
+
+.command-buttons {
+  display: flex;
+  flex-direction: column; /* empile verticalement */
+  gap: 15px;              /* espace entre les boutons */
+  margin-top: 20px;
+}
+
+.command-buttons button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color:#2E3A59;
+  background-color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.command-buttons button:hover {
+  background-color: #b9e2db; /* couleur un peu plus foncée au hover */
+  transform: translateY(-2px);
+}
+
+.command-buttons button:active {
+  transform: translateY(0);
+}
