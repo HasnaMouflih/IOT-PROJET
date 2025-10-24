@@ -7,6 +7,11 @@ from flask import Flask, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+# ==========================  
+# IMPORT PRETRAITEMENT  
+# ==========================  
+from data_preprocessing import preprocess_sensor_data
+
 # ===================================================================
 # ÉTAPE 0: CONFIGURATION
 # ===================================================================
@@ -28,7 +33,6 @@ class SensorData:
         self.timestamp = datetime.now().isoformat() if timestamp is None else datetime.fromtimestamp(int(timestamp) / 1000).isoformat()
 
     def to_dict(self):
-        """Convertit les données en dictionnaire simple."""
         return {
             "deviceId": self.device_id,
             "soilMoisture": self.soil_moisture,
@@ -42,7 +46,6 @@ class SensorData:
 # 2. MOTEUR ÉMOTIONNEL
 # ==========================
 class EmotionEngine:
-    """Traduit les données brutes des capteurs en une émotion."""
     def determine_emotion(self, data: SensorData):
         if data.soil_moisture < 30:
             return "assoiffé"
@@ -58,7 +61,6 @@ class EmotionEngine:
 # 3. PRENEUR DE DÉCISION
 # ==========================
 class DecisionMaker:
-    """Décide quelle action automatique entreprendre."""
     def decide_action(self, emotion: str):
         if emotion == "assoiffé":
             print("[DecisionMaker] La plante a soif. Décision : ARROSER.")
@@ -75,7 +77,6 @@ class DecisionMaker:
 # 4. GESTIONNAIRE DE BASE DE DONNÉES
 # ==========================
 class DatabaseManager:
-    """Gère toutes les interactions avec Firestore."""
     def __init__(self, service_account_file):
         try:
             cred = credentials.Certificate(service_account_file)
@@ -88,7 +89,6 @@ class DatabaseManager:
             self.db = None
 
     def save_reading(self, device_id, data_dict):
-        """Enregistre une nouvelle lecture ET l'émotion dans l'historique."""
         if not self.db: return False
         try:
             doc_ref = self.db.collection("plants").document(device_id).collection("readings").document(data_dict["timestamp"])
@@ -102,7 +102,6 @@ class DatabaseManager:
             return False
 
     def get_latest_state(self, plant_id):
-        """Récupère le dernier état connu de la plante."""
         if not self.db: return None
         try:
             plant_ref = self.db.collection("plants").document(plant_id).get()
@@ -112,7 +111,6 @@ class DatabaseManager:
             return None
 
     def get_all_readings(self, plant_id):
-        """Récupère tout l'historique des lectures pour une plante."""
         if not self.db: return None
         try:
             readings_ref = self.db.collection("plants").document(plant_id).collection("readings").order_by("timestamp", direction=firestore.Query.ASCENDING).stream()
@@ -123,29 +121,24 @@ class DatabaseManager:
             return None
 
 # ==========================
-# 5. COMMUNICATEUR MQTT (AMÉLIORÉ AVEC PLUS DE LOGS)
+# 5. COMMUNICATEUR MQTT
 # ==========================
 class MqttCommunicator:
-    """Classe centrale pour gérer toute la communication MQTT."""
     def __init__(self, mqtt_broker, mqtt_port):
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         self.broker = mqtt_broker
         self.port = mqtt_port
-        # --- NOUVEAU : Callbacks de débogage ---
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
 
-    # --- NOUVEAU : Gère la connexion et la souscription ---
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("[MqttCommunicator] Connexion au broker MQTT réussie !")
-            # On s'abonne ici, APRÈS une connexion réussie
             topic = "plant/+/telemetry"
             self.client.subscribe(topic)
         else:
             print(f"[MqttCommunicator] ERREUR de connexion, code de retour: {rc}")
 
-    # --- NOUVEAU : Confirme la souscription ---
     def _on_subscribe(self, client, userdata, mid, granted_qos):
         print(f"[MqttCommunicator] Souscription au topic réussie avec QoS: {granted_qos[0]}")
 
@@ -169,7 +162,6 @@ class MqttCommunicator:
 # 6. SERVICE D'INGESTION
 # ==========================
 class DataIngestService:
-    """Reçoit, analyse, décide, et stocke."""
     def __init__(self, communicator: MqttCommunicator, db_manager: DatabaseManager, emotion_engine: EmotionEngine, decision_maker: DecisionMaker):
         self.communicator = communicator
         self.db_manager = db_manager
@@ -183,8 +175,26 @@ class DataIngestService:
             print(f"\n[DataIngestService] Message reçu sur {msg.topic}: {payload}")
             
             data_json = json.loads(payload)
-            sensor_data = SensorData(**data_json)
             
+            # ================================
+            #  PRÉTRAITEMENT + NORMALISATION
+            # ================================
+            cleaned_data = preprocess_sensor_data({
+                "temperature": data_json.get("temperature"),
+                "humidity": data_json.get("humidity"),
+                "soilMoisture": data_json.get("soilMoisture"),
+                "lightLevel": data_json.get("lightLevel")
+            })
+
+            sensor_data = SensorData(
+                deviceId=data_json.get("deviceId"),
+                temperature=cleaned_data["temperature"],
+                humidity=cleaned_data["humidity"],
+                soilMoisture=cleaned_data["soilMoisture"],
+                lightLevel=cleaned_data["lightLevel"],
+                timestamp=data_json.get("timestamp")
+            )
+
             emotion = self.emotion_engine.determine_emotion(sensor_data)
             print(f"[EmotionEngine] Émotion déterminée : '{emotion}'")
 
@@ -204,7 +214,6 @@ class DataIngestService:
 # 7. SERVICE API
 # ==========================
 class APIService:
-    """Interface pour que l'application externe puisse interagir."""
     def __init__(self, communicator: MqttCommunicator, db_manager: DatabaseManager):
         self.app = Flask(__name__)
         self.communicator = communicator
@@ -218,9 +227,9 @@ class APIService:
                       <p>Le service est en ligne.</p>
                       <p>Endpoints disponibles :</p>
                       <ul>
-                        <li>GET /plants/&lt;plant_id&gt;/state : Récupère le dernier état connu.</li>
-                        <li>GET /plants/&lt;plant_id&gt;/history : Récupère tout l'historique des données.</li>
-                        <li>POST /plants/&lt;plant_id&gt;/command : Envoie une commande manuelle.</li>
+                        <li>GET /plants/&lt;plant_id&gt;/state</li>
+                        <li>GET /plants/&lt;plant_id&gt;/history</li>
+                        <li>POST /plants/&lt;plant_id&gt;/command</li>
                       </ul>"""
 
         @self.app.route('/plants/<plant_id>/state', methods=['GET'])
@@ -239,7 +248,6 @@ class APIService:
             command = data.get('command')
             if not command:
                 return jsonify({"error": "La clé 'command' est requise"}), 400
-            
             self.communicator.publish_command(plant_id, command)
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
@@ -268,4 +276,3 @@ if __name__ == "__main__":
     print(f"L'API est accessible sur http://localhost:5000")
     
     api_service.run()
-
