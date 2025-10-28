@@ -9,6 +9,9 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth, storage
 from prometheus_flask_exporter import PrometheusMetrics
 
+from data_preprocessing import preprocess_sensor_data
+
+
 # ===================================================================
 # ÉTAPE 0: CONFIGURATION SÉCURISÉE
 # ===================================================================
@@ -19,8 +22,10 @@ if firebase_key_json:
     with open(SERVICE_ACCOUNT_FILE, "w") as f:
         f.write(firebase_key_json)
 
+
 MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry" 
 MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
+
 
 # ==========================
 # 1. MODÈLE DE DONNÉES
@@ -35,6 +40,7 @@ class SensorData:
         self.humidity = float(humidity)
         self.timestamp = datetime.now().isoformat() if timestamp is None else datetime.fromtimestamp(int(timestamp)/1000).isoformat()
 
+
     def to_dict(self):
         return {
             "deviceId": self.device_id,
@@ -44,6 +50,7 @@ class SensorData:
             "humidity": self.humidity,
             "timestamp": self.timestamp,
         }
+
 
 # ==========================
 # 2. MOTEUR ÉMOTIONNEL
@@ -56,6 +63,7 @@ class EmotionEngine:
         if 40 < data.soil_moisture < 75 and 18 < data.temperature < 28: return "heureux"
         return "neutre"
 
+
 # ==========================
 # 3. PRENEUR DE DÉCISION
 # ==========================
@@ -65,6 +73,7 @@ class DecisionMaker:
         if emotion == "stressé": return "FAN:90"
         if emotion == "heureux": return "LED:GREEN"
         return None
+
 
 # ==========================
 # 4. GESTIONNAIRE DE BASE DE DONNÉES
@@ -86,6 +95,7 @@ class DatabaseManager:
             self.db = None
             self.bucket = None
 
+
     def save_reading(self, device_id, data_dict):
         if not self.db: return False
         try:
@@ -99,6 +109,7 @@ class DatabaseManager:
             print(f"[DatabaseManager] Erreur save_reading: {e}")
             return False
 
+
     def get_latest_state(self, plant_id):
         if not self.db: return None
         try:
@@ -107,6 +118,7 @@ class DatabaseManager:
         except Exception as e:
             print(f"[DatabaseManager] Erreur get_latest_state: {e}")
             return None
+
 
     def get_all_readings(self, plant_id):
         if not self.db: return None
@@ -117,6 +129,7 @@ class DatabaseManager:
             print(f"[DatabaseManager] Erreur get_all_readings: {e}")
             return None
 
+
     def upload_file(self, local_file_path, cloud_file_name):
         """Stocke un fichier dans Firebase Storage"""
         if not self.bucket: return None
@@ -125,6 +138,7 @@ class DatabaseManager:
         blob.make_public()
         print(f"[Storage] Fichier disponible à {blob.public_url}")
         return blob.public_url
+
 
 # ==========================
 # 5. COMMUNICATEUR MQTT
@@ -137,6 +151,7 @@ class MqttCommunicator:
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
 
+
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("[MQTT] Connecté au broker MQTT !")
@@ -144,22 +159,28 @@ class MqttCommunicator:
         else:
             print(f"[MQTT] Erreur connexion: {rc}")
 
+
     def _on_subscribe(self, client, userdata, mid, granted_qos):
         print(f"[MQTT] Souscription réussie avec QoS {granted_qos[0]}")
+
 
     def connect(self):
         self.client.connect(self.broker, self.port, 60)
 
+
     def start_listening(self):
         self.client.loop_start()
+
 
     def publish_command(self, device_id, command):
         topic = MQTT_COMMAND_TOPIC_TEMPLATE.format(device_id=device_id)
         self.client.publish(topic, command)
         print(f"[MQTT] Commande '{command}' envoyée sur '{topic}'")
 
+
     def set_on_message_callback(self, callback):
         self.client.on_message = callback
+
 
 # ==========================
 # 6. SERVICE D'INGESTION
@@ -172,12 +193,18 @@ class DataIngestService:
         self.decision_maker = decision_maker
         self.communicator.set_on_message_callback(self.on_message_received)
 
+
     def on_message_received(self, client, userdata, msg):
         try:
             payload = msg.payload.decode()
             print(f"[Ingest] Message reçu sur {msg.topic}: {payload}")
             data_json = json.loads(payload)
-            sensor_data = SensorData(**data_json)
+
+            # Utilisation du preprocessing importé
+            preprocessed_data = preprocess_sensor_data(data_json)
+
+            sensor_data = SensorData(**preprocessed_data)
+
             emotion = self.emotion_engine.determine_emotion(sensor_data)
             command = self.decision_maker.decide_action(emotion)
             if command:
@@ -187,6 +214,7 @@ class DataIngestService:
             self.db_manager.save_reading(sensor_data.device_id, data_to_save)
         except Exception as e:
             print(f"[Ingest] Erreur traitement message: {e}")
+
 
 # ==========================
 # 7. SERVICE API AVEC AUTH ET MONITORING
@@ -200,6 +228,7 @@ class APIService:
         self.metrics.info('app_info', 'Pot de Fleurs Émotionnel', version='1.0.0')
         self.setup_routes()
 
+
     # --- Vérifier le token JWT Firebase ---
     def verify_token(self, id_token):
         try:
@@ -209,11 +238,13 @@ class APIService:
             print(f"[Auth] Token invalide: {e}")
             return None
 
+
     def setup_routes(self):
         @self.app.route('/', methods=['GET'])
         def home():
             return """<h1>API du Pot de Fleurs Émotionnel</h1>
                       <p>Le service est en ligne.</p>"""
+
 
         @self.app.route('/plants/<plant_id>/state', methods=['GET'])
         @self.metrics.counter('get_plant_state_requests', 'Nombre de requêtes /state')
@@ -224,6 +255,7 @@ class APIService:
             state = self.db_manager.get_latest_state(plant_id)
             return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
 
+
         @self.app.route('/plants/<plant_id>/history', methods=['GET'])
         def get_plant_history(plant_id):
             token = request.headers.get('Authorization')
@@ -231,6 +263,7 @@ class APIService:
                 return jsonify({"error": "Unauthorized"}), 401
             history = self.db_manager.get_all_readings(plant_id)
             return jsonify(history) if history else (jsonify({"error": "Historique non trouvé"}), 404)
+
 
         @self.app.route('/plants/<plant_id>/command', methods=['POST'])
         def send_manual_command(plant_id):
@@ -244,8 +277,10 @@ class APIService:
             self.communicator.publish_command(plant_id, command)
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
+
     def run(self, host="0.0.0.0", port=5000):
         self.app.run(host=host, port=port, debug=False, use_reloader=False)
+
 
 # ==========================
 # PROGRAMME PRINCIPAL
@@ -261,11 +296,12 @@ if __name__ == "__main__":
     ingest_service = DataIngestService(mqtt_communicator, db_manager, emotion_engine, decision_maker)
     api_service = APIService(mqtt_communicator, db_manager)
 
+
     mqtt_communicator.connect()
     mqtt_communicator.start_listening()
+
 
     print("\nLe service est prêt. En attente des données de l'ESP32...")
     print(f"L'API est accessible sur http://localhost:5000")
     
     api_service.run()
-
