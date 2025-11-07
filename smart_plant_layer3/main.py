@@ -1,7 +1,7 @@
 import time
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 from flask import Flask, request, jsonify
 import firebase_admin
@@ -30,7 +30,6 @@ class SensorData:
         self.temperature = float(temperature)
         self.light_level = float(lightLevel)
         self.humidity = float(humidity)
-        # Timestamp safe pour Firebase (pas de :)
         ts = datetime.now() if timestamp is None else datetime.fromtimestamp(int(timestamp)/1000)
         self.timestamp = ts.isoformat().replace(":", "_")
 
@@ -69,7 +68,6 @@ class DecisionMaker:
 # 4. GESTIONNAIRE DE BASE DE DONNÉES
 # ==========================
 class DatabaseManager:
-    """Gère Realtime Database et Storage"""
     def __init__(self, service_account_file):
         try:
             cred = credentials.Certificate(service_account_file)
@@ -87,12 +85,9 @@ class DatabaseManager:
             self.bucket = None
 
     def save_reading(self, device_id, data_dict):
-        if not self.db_root: return False
         try:
-            # Stocker la lecture dans /plants/<device_id>/readings/<timestamp safe>
             readings_ref = self.db_root.child("plants").child(device_id).child("readings")
             readings_ref.child(data_dict["timestamp"]).set(data_dict)
-            # Mettre à jour le dernier état
             self.db_root.child("plants").child(device_id).child("last_update").set(data_dict)
             print(f"[DatabaseManager] Données enregistrées pour {device_id}.")
             return True
@@ -101,16 +96,13 @@ class DatabaseManager:
             return False
 
     def get_latest_state(self, plant_id):
-        if not self.db_root: return None
         try:
-            state = self.db_root.child("plants").child(plant_id).child("last_update").get()
-            return state
+            return self.db_root.child("plants").child(plant_id).child("last_update").get()
         except Exception as e:
             print(f"[DatabaseManager] Erreur get_latest_state: {e}")
             return None
 
     def get_all_readings(self, plant_id):
-        if not self.db_root: return None
         try:
             readings = self.db_root.child("plants").child(plant_id).child("readings").get()
             return list(readings.values()) if readings else []
@@ -181,7 +173,7 @@ class DataIngestService:
             print(f"[Ingest] Erreur traitement message: {e}")
 
 # ==========================
-# 7. SERVICE API AVEC AUTH
+# 7. SERVICE API + CDN
 # ==========================
 class APIService:
     def __init__(self, communicator, db_manager):
@@ -233,6 +225,29 @@ class APIService:
             self.communicator.publish_command(plant_id, command)
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
+        # ROUTE CDN 
+        @self.app.route('/cdn/<user_id>/files', methods=['GET'])
+        def list_user_files(user_id):
+            token = request.headers.get('Authorization')
+            if not token or not self.verify_token(token):
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            try:
+                bucket = self.db_manager.bucket
+                prefix = f"{user_id}/"
+                blobs = bucket.list_blobs(prefix=prefix)
+                files = [
+                    {
+                        "name": b.name,
+                        "url": b.generate_signed_url(timedelta(hours=1))
+                    }
+                    for b in blobs
+                ]
+                return jsonify({"files": files})
+            except Exception as e:
+                print(f"[CDN] Erreur list_user_files: {e}")
+                return jsonify({"error": "Erreur lors de la récupération des fichiers"}), 500
+
     def run(self, host="0.0.0.0", port=5000):
         self.app.run(host=host, port=port, debug=False, use_reloader=False)
 
@@ -254,6 +269,6 @@ if __name__ == "__main__":
     mqtt_communicator.start_listening()
 
     print("\n🌼 Le service est prêt. En attente des données de l'ESP32...")
-    print(f"🌐 L'API est accessible sur http://localhost:5000")
+    print("🌐 L'API est accessible sur http://localhost:5000")
 
-    api_service.run()
+    api_service.run() 
