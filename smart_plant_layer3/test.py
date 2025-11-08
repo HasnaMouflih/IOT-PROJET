@@ -1,10 +1,32 @@
-from firebase_admin import credentials, initialize_app, storage
+import firebase_admin
+from firebase_admin import credentials, db
+from datetime import datetime
 
-cred = credentials.Certificate("smart_key.json")
-app = initialize_app(cred, {'storageBucket': 'smart-plant-iot-30ed4.appspot.com'})
-bucket = storage.bucket()
+print("🚀 Démarrage du test Firebase Realtime Database...")
 
-# Test : créer un fichier test.txt et l'uploader
-blob = bucket.blob("test.txt")
-blob.upload_from_string("Hello Firebase Storage!")
-print("✅ Fichier uploadé :", blob.public_url)
+# Initialisation Firebase
+cred = credentials.Certificate("key_private.json")
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://smart-plant-free-default-rtdb.firebaseio.com/'
+})
+
+try:
+    ref = db.reference("/plants/test_plant/readings")
+    timestamp = datetime.now().isoformat().replace(":", "_").replace(".", "_")
+    data = {
+        "deviceId": "test_plant",
+        "humidity": 60,
+        "lightLevel": 80,
+        "soilMoisture": 50,
+        "temperature": 25,
+        "timestamp": str(datetime.now())
+    }
+    ref.child(timestamp).set(data)
+    print("✅ Écriture réussie !")
+
+    snapshot = ref.get()
+    print("✅ Lecture réussie ! Données actuelles :")
+    print(snapshot)
+
+except Exception as e:
+    print("❌ Erreur :", e)

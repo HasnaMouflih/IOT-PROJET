@@ -73,7 +73,7 @@ class DatabaseManager:
             cred = credentials.Certificate(service_account_file)
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred, {
-                    'databaseURL': 'https://smart-plant-iot-e0b6c-30ed4-default-rtdb.europe-west1.firebasedatabase.app',
+                    'databaseURL': 'https://smart-plant-free-default-rtdb.firebaseio.com/',
                     'storageBucket': 'smart-plant-iot-c-30ed4.appspot.com'
                 })
             self.db_root = db.reference("/")
