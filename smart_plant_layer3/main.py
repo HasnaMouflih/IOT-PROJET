@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, db, auth, storage
 from prometheus_flask_exporter import PrometheusMetrics
+<<<<<<< HEAD
 import cloudinary
 import cloudinary.uploader
 
@@ -15,11 +16,17 @@ cloudinary.config(
   api_key = "134458997237921",            # Remplace ici par ta clé API
   api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"      # Remplace ici par ton secret
 )
+=======
+>>>>>>> af48798e79a8c66ec48a9b47efade0bb3fa425f8
 
 # ===================================================================
 # ÉTAPE 0 : CONFIGURATION
 # ===================================================================
+<<<<<<< HEAD
 SERVICE_ACCOUNT_FILE = "private_key.json"
+=======
+SERVICE_ACCOUNT_FILE = "smart_key.json"
+>>>>>>> af48798e79a8c66ec48a9b47efade0bb3fa425f8
 firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 if firebase_key_json:
     with open(SERVICE_ACCOUNT_FILE, "w") as f:
@@ -279,4 +286,8 @@ if __name__ == "__main__":
     print("\n🌼 Le service est prêt. En attente des données de l'ESP32...")
     print("🌐 L'API est accessible sur http://localhost:5000")
 
+<<<<<<< HEAD
     api_service.run() 
+=======
+    api_service.run() 
+>>>>>>> af48798e79a8c66ec48a9b47efade0bb3fa425f8
