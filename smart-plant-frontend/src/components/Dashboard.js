@@ -6,31 +6,39 @@ import RealtimeMeasureCard from "../components/RealtimeMeasureCard";
 import ChartsSection from "../components/ChartsSection";
 import CommandPanel from "../components/CommandPanel"
 import "../style/dashboard.css";
+import HistoryTable from "../components/HistoryTable"
 
 function Dashboard() {
   const [activeItem, setActiveItem] = useState("plant");
   const [selectedPlant, setSelectedPlant] = useState("PLANT-001");
   const [plants, setPlants] = useState([]);
   const [plantData, setPlantData] = useState(null);
+  const [commandStats, setCommandStats] = useState({
+      water: 0,
+      light_on: 0,
+      light_off: 0,
+    });
 
   
-  useEffect(() => {
-    const fetchPlants = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/plants");
-        const data = await response.json();
-        setPlants(data);
-      } catch (error) {
-        console.error("Erreur lors du chargement des plantes:", error);
-      }
-    };
-    fetchPlants();
-  }, []);
+useEffect(() => {
+  const fetchPlants = async () => {
+    try {
+      const response = await fetch("http://localhost:9000/api/plants");
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      setPlants(data);
+    } catch (error) {
+      console.error("Erreur lors du chargement des plantes:", error);
+    }
+  };
+  fetchPlants();
+}, []);
+
 
   useEffect(() => {
     const fetchPlantData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/plants?id=${selectedPlant}`);
+        const response = await fetch(`http://localhost:9000/api/plants?id=${selectedPlant}`);
         const data = await response.json();
         setPlantData(data);
       } catch (error) {
@@ -85,6 +93,13 @@ function Dashboard() {
                     color="#FFD93D"
                     backcolor="#FCF9EA"
                   />
+                  <RealtimeMeasureCard
+                      title="Humidité du sol"
+                      value={plantData.soilMoisture + "%"}
+                      icon="FaSeedling"
+                      color="#8D6E63"        
+                      backcolor="#F3E5AB"    
+                  />
                 </div>
           
 
@@ -95,11 +110,13 @@ function Dashboard() {
                 light={plantData.light}
               />
 
-            <CommandPanel plants={plants} selectedPlant={selectedPlant} />
+            <CommandPanel 
+                plants={plants} 
+                selectedPlant={selectedPlant}  
+                commandStats={commandStats}
+                setCommandStats={setCommandStats} 
+            />
             </div>
-
-
-                <ChartsSection plantData={plantData} />
               </>
             ) : (
               <div className="loading-spinner">
@@ -108,12 +125,23 @@ function Dashboard() {
             )}
           </div>
         );
+      case "statistiques":
+        return (
+            <div className="dashboard-content">
+               <h2>Suivi des mesures</h2>
+                     <ChartsSection 
+                          plantData={plantData} 
+                          commandStats={commandStats}  
+                      />
+            
+            </div>
+        );
 
       case "history":
         return (
           <div className="dashboard-content">
             <h2>Historique des mesures</h2>
-            <p>Les données historiques de la plante seront affichées ici.</p>
+            <HistoryTable/>
           </div>
         );
 

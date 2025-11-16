@@ -1,80 +1,121 @@
-import React from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-} from "recharts";
+
 import "../style/dashboard.css";
+import { LineChart } from "@mui/x-charts/LineChart";
+import { BarChart } from '@mui/x-charts/BarChart';
+import Stack from '@mui/material/Stack';
+import { Gauge } from '@mui/x-charts/Gauge';
+import { PieChart } from '@mui/x-charts/PieChart';
 
+function ChartsSection({ plantData , commandStats}) {
+      if (!plantData?.history) return null;
+  
+    const pieData = [
+      { id: 0, value: commandStats.water, label: 'Water' },
+      { id: 1, value: commandStats.light_on, label: 'Light ON' },
+      { id: 2, value: commandStats.light_off, label: 'Light OFF' }
+    ];
+  const xAxisData = plantData.history.map((h) => h.time);
+  const series = [
+    {
+      data: plantData.history.map((h) => h.humidity),
+      label: "Humidité (%)",
+      stroke: "#4ECDC4",
+      area: false,        // area under the line
+      fillOpacity: 0.3,
+      fill: "#4ECDC4",
+    },
+    {
+      data: plantData.history.map((h) => h.temperature),
+      label: "Température (°C)",
+      stroke: "#FF6B6B",
+      strokeWidth: 2,
+    },
+   
+  ];
 
-function ChartsSection({ plantData }) {
+  const lightdata = [
+      {
+      data: plantData.history.map((h) => h.light),
+      label: "luminosite (°C)",
+      stroke: "#FFD93D",
+      strokeWidth: 2,
+    },
+
+   
+  ];
+
+  const soilMoisturedata = [
+      {
+      data: plantData.history.map((h) => h.soilMoisture),
+      label: "Humidité du sol (%)",
+      stroke: "#FFD93D",
+      strokeWidth: 2,
+    },
+
+   
+  ];
+ 
   return (
     <div className="charts-section">
-      <h2>📈 Suivi des mesures</h2>
       <div className="charts-grid">
-        <div className="chart-card">
-          <h3>Évolution de l’humidité</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={plantData.history}>
-                           <defs>
-                <linearGradient id="colorHum" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4ECDC4" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#4ECDC4" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="time" />
-              <YAxis />
-              <CartesianGrid strokeDasharray="3 3" />
-              <Tooltip />
-              <Area
-                type="monotone"
-                dataKey="humidity"
-                stroke="#4ECDC4"
-                fillOpacity={1}
-                fill="url(#colorHum)"
+        <div className="chart-card" style={{ width: 400, height: 300, padding: 20 }}>
+            <h3>Évolution de l’humidité et de la température</h3>
+            <div style={{ width: "100%", height: "100%" }}>
+              <LineChart
+                width={400}   // match the parent width
+                height={250}  // slightly smaller than parent to leave space for title
+                xAxis={[{ data: xAxisData, scaleType: "point" }]}
+                series={series}
               />
-            </AreaChart>
-          </ResponsiveContainer>
+            </div>
+        </div>
+        <div className="chart-card" style={{ width: 400, height: 300, padding: 20 }}>
+            <h3>Intensité lumineuse</h3>
+              <div style={{ width: "100%", height: "100%" }}>
+                <LineChart
+                  width={400}   
+                  height={250}  
+                  xAxis={[{ data: xAxisData, scaleType: "point" }]}
+                  series={lightdata}
+                />
+              </div>
         </div>
 
-        <div className="chart-card">
-          <h3>Évolution de la température</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={plantData.history}>
-              <XAxis dataKey="time" />
-              <YAxis />
-              <CartesianGrid strokeDasharray="3 3" />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="temperature"
-                stroke="#FF6B6B"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="chart-card" style={{ width: 400, height: 300, padding: 20 }}>
+            <h3>l'humidité du sol</h3>
+              <div style={{ width: "100%", height: "100%" }}>
+                <BarChart
+                  xAxis={[{ data: xAxisData, scaleType: "band" }]}
+                  series={soilMoisturedata}
+                   width={400}   
+                  height={250}
+                />
+           
+       
+              </div>
         </div>
+        <div className="chart-card" style={{ width: 400, height: 300, padding: 20 }}>
+                 <h3>Command Usage</h3>
+                <PieChart
+                  series={[
+                    {
+                      data: pieData,
+                      innerRadius: 30,
+                      outerRadius: 100,
+                      paddingAngle: 5,
+                      cornerRadius: 5,
+                      startAngle: -45,
+                      endAngle: 225,
+                      cx: 150,
+                      cy: 150,
+                    }
+                  ]}
+                  width={300}
+                  height={300}
+                />
+         </div>
 
-        <div className="chart-card">
-          <h3>Intensité lumineuse</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={plantData.history}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="light" fill="#FFD93D" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+
       </div>
     </div>
   );

@@ -1,17 +1,53 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getPlantById } from "../../../services/plantServices";
+import { mockPlants, Plant } from "../../../utils/mockData";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { id } = req.query as { id?: string };
+const USE_MOCK = true; // ⚡ Passe à false pour activer la connexion au cloud Flask
+const FLASK_BASE_URL = "http://localhost:5000";
 
-  if (req.method === "GET") {
-    const plant = await getPlantById(id as string);
-    if (!plant) {
-      return res.status(404).json({ error: "Plant not found" });
-    }
-    return res.status(200).json(plant);
+// 🔹 Fonction de normalisation du format cloud → format Plant
+function normalizePlant(stateData: any, historyData: any[]): Plant {
+  const history = (historyData || []).map((h) => ({
+    time: new Date(h.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    temperature: h.temperature,
+    humidity: h.humidity,
+    light: h.lightLevel,
+    soilMoisture: h.soilMoisture,
+  }));
+
+  return {
+    id: stateData.deviceId,
+    name: `Plant ${stateData.deviceId} 🌿`,
+    emotion: stateData.emotion ?? "neutre",
+    temperature: stateData.temperature,
+    humidity: stateData.humidity,
+    light: stateData.lightLevel,
+    soilMoisture: stateData.soilMoisture,
+    history,
+  };
+}
+
+// 🔹 Récupérer une plante par ID
+export async function getPlantById(id: string): Promise<Plant | null> {
+  if (USE_MOCK) {
+    return mockPlants[id] || null;
   }
 
-  res.setHeader("Allow", ["GET"]);
-  return res.status(405).end(`Method ${req.method} Not Allowed`);
+  try {
+    const [stateRes, historyRes] = await Promise.all([
+      fetch(`${FLASK_BASE_URL}/plants/${id}/state`),
+      fetch(`${FLASK_BASE_URL}/plants/${id}/history`),
+    ]);
+
+    if (!stateRes.ok || !historyRes.ok) {
+      console.warn(`⚠️ Impossible de récupérer la plante ${id} depuis le cloud`);
+      return null;
+    }
+
+    const stateData = await stateRes.json();
+    const historyData = await historyRes.json();
+
+    return normalizePlant(stateData, historyData);
+  } catch (error) {
+    console.error(`❌ Erreur lors de la récupération de la plante ${id}:`, error);
+    return null;
+  }
 }
