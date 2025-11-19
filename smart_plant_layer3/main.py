@@ -4,31 +4,55 @@ import json
 from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # <--- NOUVEAU : Pour autoriser React
 import firebase_admin
 from firebase_admin import credentials, db, auth, storage
 from prometheus_flask_exporter import PrometheusMetrics
 import cloudinary
 import cloudinary.uploader
 
+# Configuration Cloudinary
 cloudinary.config(
-  cloud_name = "dzsvyfovr",          # Ton Cloud name
-  api_key = "134458997237921",            # Remplace ici par ta clé API
-  api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"      # Remplace ici par ton secret
+  cloud_name = "dzsvyfovr",
+  api_key = "134458997237921",
+  api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"
 )
 
+import os
 
 # ===================================================================
 # ÉTAPE 0 : CONFIGURATION
 # ===================================================================
-SERVICE_ACCOUNT_FILE = "private_key.json"
 
-SERVICE_ACCOUNT_FILE = "smart_key.json"
+# 1. Chemin par défaut (pour le développement local, si le fichier existe)
+LOCAL_KEY_FILE = "smart.json" 
 
+# 2. Chemin temporaire et sécurisé pour le déploiement (Render)
+DEPLOY_KEY_FILE = "/tmp/firebase_service_account.json" 
+
+# Récupère le contenu JSON depuis la variable d'environnement (si elle est définie par Render)
 firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
-if firebase_key_json:
-    with open(SERVICE_ACCOUNT_FILE, "w") as f:
-        f.write(firebase_key_json)
 
+if firebase_key_json:
+    # Si nous sommes en production/déploiement (FIREBASE_SERVICE_ACCOUNT_JSON est défini)
+    
+    # Écrit le contenu du secret dans un fichier temporaire sécurisé
+    with open(DEPLOY_KEY_FILE, "w") as f:
+        f.write(firebase_key_json)
+        
+    # Le chemin que le DatabaseManager utilisera
+    SERVICE_ACCOUNT_FILE = DEPLOY_KEY_FILE 
+    print(f"[Config] Mode Production: Utilisation de la clé temporaire {DEPLOY_KEY_FILE}")
+
+else:
+    # Si nous sommes en développement local (FIREBASE_SERVICE_ACCOUNT_JSON n'est PAS défini)
+    
+    # Le chemin que le DatabaseManager utilisera
+    SERVICE_ACCOUNT_FILE = LOCAL_KEY_FILE
+    print(f"[Config] Mode Local: Utilisation du fichier {LOCAL_KEY_FILE}")
+
+
+# Configuration MQTT (inchangée)
 MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
 MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
 
@@ -77,10 +101,18 @@ class DecisionMaker:
         return None
 
 # ==========================
-# 4. GESTIONNAIRE DE BASE DE DONNÉES
+# 4. GESTIONNAIRE DE BASE DE DONNÉES (CORRIGÉ)
 # ==========================
 class DatabaseManager:
     def __init__(self, service_account_file):
+        print(f"[DatabaseManager] Tentative de connexion avec le fichier : {service_account_file}")
+        
+        # On vérifie si le fichier existe
+        if not os.path.exists(service_account_file):
+            print(f"❌ ERREUR CRITIQUE : Le fichier '{service_account_file}' est introuvable !")
+            print("Assurez-vous que le fichier JSON est bien dans le même dossier que ce script.")
+            exit(1) # On arrête le script ici
+
         try:
             cred = credentials.Certificate(service_account_file)
             if not firebase_admin._apps:
@@ -92,9 +124,9 @@ class DatabaseManager:
             self.bucket = storage.bucket()
             print("[DatabaseManager] ✅ Realtime Database initialisée avec succès.")
         except Exception as e:
-            print(f"[DatabaseManager] ERREUR Firebase: {e}")
-            self.db_root = None
-            self.bucket = None
+            print(f"❌ ERREUR CRITIQUE Firebase : {e}")
+            # On force l'arrêt pour ne pas avoir l'erreur NoneType plus tard
+            raise e 
 
     def save_reading(self, device_id, data_dict):
         try:
@@ -108,20 +140,12 @@ class DatabaseManager:
             return False
 
     def get_latest_state(self, plant_id):
-        try:
-            return self.db_root.child("plants").child(plant_id).child("last_update").get()
-        except Exception as e:
-            print(f"[DatabaseManager] Erreur get_latest_state: {e}")
-            return None
+        # Plus de try/except ici pour voir l'erreur brute si elle survient
+        return self.db_root.child("plants").child(plant_id).child("last_update").get()
 
     def get_all_readings(self, plant_id):
-        try:
-            readings = self.db_root.child("plants").child(plant_id).child("readings").get()
-            return list(readings.values()) if readings else []
-        except Exception as e:
-            print(f"[DatabaseManager] Erreur get_all_readings: {e}")
-            return None
-
+        readings = self.db_root.child("plants").child(plant_id).child("readings").get()
+        return list(readings.values()) if readings else []
 # ==========================
 # 5. COMMUNICATEUR MQTT
 # ==========================
@@ -190,6 +214,7 @@ class DataIngestService:
 class APIService:
     def __init__(self, communicator, db_manager):
         self.app = Flask(__name__)
+        CORS(self.app) # <--- AJOUT IMPORTANT : Active CORS pour React
         self.communicator = communicator
         self.db_manager = db_manager
         self.metrics = PrometheusMetrics(self.app)
@@ -211,25 +236,45 @@ class APIService:
 
         @self.app.route('/plants/<plant_id>/state', methods=['GET'])
         def get_plant_state(plant_id):
-            token = request.headers.get('Authorization')
-            if not token or not self.verify_token(token):
-                return jsonify({"error": "Unauthorized"}), 401
+            # --- SECTION SÉCURITÉ (Désactivée pour tester) ---
+            # Pour réactiver, décommentez ces lignes :
+            
+            # auth_header = request.headers.get('Authorization')
+            # if not auth_header:
+            #     return jsonify({"error": "Unauthorized: No token provided"}), 401
+            # 
+            # # Nettoyage du token (enlève "Bearer " si présent)
+            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+            # 
+            # if not self.verify_token(token):
+            #     return jsonify({"error": "Unauthorized: Invalid token"}), 401
+            
+            # --- FIN SECTION SÉCURITÉ ---
+
             state = self.db_manager.get_latest_state(plant_id)
             return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
 
         @self.app.route('/plants/<plant_id>/history', methods=['GET'])
         def get_plant_history(plant_id):
-            token = request.headers.get('Authorization')
-            if not token or not self.verify_token(token):
-                return jsonify({"error": "Unauthorized"}), 401
+            # --- SÉCURITÉ DÉSACTIVÉE ---
+            # auth_header = request.headers.get('Authorization')
+            # if not auth_header: return jsonify({"error": "Unauthorized"}), 401
+            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+            # if not self.verify_token(token): return jsonify({"error": "Unauthorized"}), 401
+            # ---------------------------
+
             history = self.db_manager.get_all_readings(plant_id)
             return jsonify(history) if history else (jsonify({"error": "Historique non trouvé"}), 404)
 
         @self.app.route('/plants/<plant_id>/command', methods=['POST'])
         def send_manual_command(plant_id):
-            token = request.headers.get('Authorization')
-            if not token or not self.verify_token(token):
-                return jsonify({"error": "Unauthorized"}), 401
+            # --- SÉCURITÉ DÉSACTIVÉE ---
+            # auth_header = request.headers.get('Authorization')
+            # if not auth_header: return jsonify({"error": "Unauthorized"}), 401
+            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+            # if not self.verify_token(token): return jsonify({"error": "Unauthorized"}), 401
+            # ---------------------------
+
             data = request.get_json()
             command = data.get('command')
             if not command:
@@ -238,11 +283,23 @@ class APIService:
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
         # ROUTE CDN 
+        # Ajoutez ceci sous vos autres routes
+        @self.app.route('/admin/all-data', methods=['GET'])
+        def get_entire_database():
+            # Récupère tout depuis la racine "/"
+            try:
+                all_data = self.db_manager.db_root.get()
+                return jsonify(all_data)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
         @self.app.route('/cdn/<user_id>/files', methods=['GET'])
         def list_user_files(user_id):
-            token = request.headers.get('Authorization')
-            if not token or not self.verify_token(token):
-                return jsonify({"error": "Unauthorized"}), 401
+            # --- SÉCURITÉ DÉSACTIVÉE ---
+            # auth_header = request.headers.get('Authorization')
+            # if not auth_header: return jsonify({"error": "Unauthorized"}), 401
+            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
+            # if not self.verify_token(token): return jsonify({"error": "Unauthorized"}), 401
+            # ---------------------------
             
             try:
                 bucket = self.db_manager.bucket
@@ -263,6 +320,7 @@ class APIService:
     def run(self, host="0.0.0.0", port=5000):
         self.app.run(host=host, port=port, debug=False, use_reloader=False)
 
+
 # ==========================
 # MAIN
 # ==========================
@@ -282,4 +340,4 @@ if __name__ == "__main__":
 
     print("\n🌼 Le service est prêt. En attente des données de l'ESP32...")
     print("🌐 L'API est accessible sur http://localhost:5000")
-    api_service.run() 
+    api_service.run()
