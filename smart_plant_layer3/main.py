@@ -252,6 +252,7 @@ class APIService:
             # --- FIN SECTION SÉCURITÉ ---
 
             state = self.db_manager.get_latest_state(plant_id)
+            print(f"[DEBUG] get_latest_state({plant_id}) returned:", state)
             return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
 
         @self.app.route('/plants/<plant_id>/history', methods=['GET'])

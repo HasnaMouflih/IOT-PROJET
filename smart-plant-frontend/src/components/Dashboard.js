@@ -4,9 +4,11 @@ import Sidebar from "../components/Sidebar";
 import PlantStatusCard from "../components/PlantStatusCard";
 import RealtimeMeasureCard from "../components/RealtimeMeasureCard";
 import ChartsSection from "../components/ChartsSection";
-import CommandPanel from "../components/CommandPanel"
+import CommandPanel from "../components/CommandPanel";
+import AiPanel from "../components/AiPanel";
 import "../style/dashboard.css";
 import HistoryTable from "../components/HistoryTable"
+import { getPlantsList, getPlantState } from "../services/PlantServices.js";
 
 function Dashboard() {
   const [activeItem, setActiveItem] = useState("plant");
@@ -21,32 +23,31 @@ function Dashboard() {
 
   
 useEffect(() => {
-  const fetchPlants = async () => {
+  const loadPlants = async () => {
     try {
-      const response = await fetch("http://localhost:9000/api/plants");
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await getPlantsList();
       setPlants(data);
     } catch (error) {
       console.error("Erreur lors du chargement des plantes:", error);
     }
   };
-  fetchPlants();
+  loadPlants();
 }, []);
 
 
-  useEffect(() => {
-    const fetchPlantData = async () => {
-      try {
-        const response = await fetch(`http://localhost:9000/api/plants?id=${selectedPlant}`);
-        const data = await response.json();
-        setPlantData(data);
-      } catch (error) {
-        console.error("Erreur lors du chargement des données de la plante:", error);
-      }
-    };
-    fetchPlantData();
-  }, [selectedPlant]);
+
+useEffect(() => {
+  const loadPlant = async () => {
+    try {
+      const data = await getPlantState(selectedPlant);
+      setPlantData(data);
+    } catch (error) {
+      console.error("Erreur lors du chargement des données de la plante:", error);
+    }
+  };
+  loadPlant();
+}, [selectedPlant]);
+
 
   const renderContent = () => {
     switch (activeItem) {
@@ -104,11 +105,7 @@ useEffect(() => {
           
 
                 <div className="plant-overview">
-              <PlantStatusCard
-                humidity={plantData.humidity}
-                temperature={plantData.temperature}
-                light={plantData.light}
-              />
+              <PlantStatusCard emotion={plantData.emotion} />
 
             <CommandPanel 
                 plants={plants} 
@@ -142,6 +139,13 @@ useEffect(() => {
           <div className="dashboard-content">
             <h2>Historique des mesures</h2>
             <HistoryTable/>
+          </div>
+        );
+      case "prediction":
+        return (
+          <div className="dashboard-content">
+            <h2>Prévoir l'état future de la plante</h2>
+            <AiPanel plantData={plantData} />
           </div>
         );
 

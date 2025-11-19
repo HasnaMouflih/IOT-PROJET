@@ -1,66 +1,81 @@
 import React, { useState, useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { useDemoData } from '@mui/x-data-grid-generator';
 import CircularProgress from "@mui/material/CircularProgress";
-import axios from "axios";
+import { getPlantsList, getPlantState } from "../services/PlantServices.js"; // ton service mock
 
 export default function PlantHistoryGrid() {
   const [plants, setPlants] = useState([]);
+  const [selectedPlant, setSelectedPlant] = useState("");
+  const [allHistory, setAllHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPlants = async () => {
+    const loadPlants = async () => {
+      setLoading(true);
       try {
-        const res = await axios.get("http://localhost:9000/api/plants");
-        setPlants(res.data);
+        const list = await getPlantsList();
+        setPlants(list);
+
+        if (list.length > 0) {
+          const defaultPlant = list[0].id;
+          setSelectedPlant(defaultPlant);
+          const plantState = await getPlantState(defaultPlant);
+          const historyList = plantState.history.map((h, index) => ({
+            id: index,
+            plantName: `Plante ${defaultPlant}`,
+            time: h.timestamp,
+            humidity: h.humidity,
+            temperature: h.temperature,
+            light: h.light,
+            soilMoisture: h.soilMoisture,
+            emotion: h.emotion,
+          }));
+          setAllHistory(historyList);
+        }
       } catch (err) {
-        console.error("Erreur lors de la récupération des plantes :", err);
+        console.error("Erreur:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchPlants();
+
+    loadPlants();
   }, []);
 
-  // Flatten history list
-  const allHistory = [];
-  plants.forEach((plant) => {
-    plant.history?.forEach((h) =>
-      allHistory.push({ ...h, plantName: plant.name })
-    );
-  });
+  const handleChangePlant = async (e) => {
+    const deviceId = e.target.value;
+    setSelectedPlant(deviceId);
+    setLoading(true);
+    try {
+      const plantState = await getPlantState(deviceId);
+      const historyList = plantState.history.map((h, index) => ({
+        id: index,
+        plantName: `Plante ${deviceId}`,
+        time: h.timestamp,
+        humidity: h.humidity,
+        temperature: h.temperature,
+        light: h.light,
+        soilMoisture: h.soilMoisture,
+        emotion: h.emotion,
+      }));
+      setAllHistory(historyList);
+    } catch (err) {
+      console.error(err);
+      setAllHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const columns = [
-      { field: "plantName", headerName: "Plante", flex: 1 ,   hideable: true,
-    renderCell: (params) => params.value,
-    sx: { display: { xs: "none", sm: "block" } }
-  },
-      { field: "time", headerName: "Heure", flex: 1 ,   hideable: true,
-    renderCell: (params) => params.value,
-    sx: { display: { xs: "none", sm: "block" } }
-  },
-      { field: "humidity", headerName: "Humidité", flex: 1 ,   hideable: true,
-    renderCell: (params) => params.value,
-    sx: { display: { xs: "none", sm: "block" } }
-  },
-      { field: "temperature", headerName: "Température", flex: 1 ,   hideable: true,
-    renderCell: (params) => params.value,
-    sx: { display: { xs: "none", sm: "block" } }
-  },
-      { field: "light", headerName: "Lumière", flex: 1 ,   hideable: true,
-    renderCell: (params) => params.value,
-    sx: { display: { xs: "none", sm: "block" } }
-  },
-      { field: "soilMoisture", headerName: "Humidité du sol", flex: 1,    hideable: true,
-    renderCell: (params) => params.value,
-    sx: { display: { xs: "none", sm: "block" } }
-  },
-      { field: "emotion", headerName: "Émotion", flex: 1  ,  hideable: true,
-      renderCell: (params) => params.value,
-      sx: { display: { xs: "none", sm: "block" } }
-    },
-    ];
-
+  const columns = [
+    { field: "plantName", headerName: "Plante", flex: 1 },
+    { field: "time", headerName: "Heure", flex: 1 },
+    { field: "humidity", headerName: "Humidité", flex: 1 },
+    { field: "temperature", headerName: "Température", flex: 1 },
+    { field: "light", headerName: "Lumière", flex: 1 },
+    { field: "soilMoisture", headerName: "Humidité du sol", flex: 1 },
+    { field: "emotion", headerName: "Émotion", flex: 1 },
+  ];
 
   if (loading) {
     return (
@@ -71,9 +86,22 @@ export default function PlantHistoryGrid() {
   }
 
   return (
-    <div style={{ height: 450, width: "100%" }}>
+    <div style={{ height: 500, width: "100%" }}>
+      {/* Selecteur de plante */}
+      <div style={{ marginBottom: 16 }}>
+        <label>Choisir une plante : </label>
+        <select value={selectedPlant} onChange={handleChangePlant}>
+          {plants.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* DataGrid avec toolbar, recherche, impression et téléchargement */}
       <DataGrid
-        rows={allHistory.map((h, index) => ({ id: index, ...h }))}
+        rows={allHistory}
         columns={columns}
         showToolbar
         pageSizeOptions={[5, 10, 20]}
