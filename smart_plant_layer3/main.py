@@ -16,17 +16,30 @@ import ssl
 # CONFIGURATION CLOUDINARY
 # ==========================
 cloudinary.config(
+<<<<<<< HEAD
     cloud_name="dzsvyfovr",
     api_key="134458997237921",
     api_secret="9_ssJtao-41cSsXO9nLfjcI0EDM"
+=======
+    cloud_name="CLOUDINARY_CLOUD_NAME",
+    api_key="CLOUDINARY_API_KEY",
+    api_secret="CLOUDINARY_API_SECRET"
+>>>>>>> 4c0e830 (gestion des secrets)
 )
 
 # ==========================
 # CONFIGURATION FIREBASE
 # ==========================
+<<<<<<< HEAD
 
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "smart.json")
 firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+=======
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "smart.json")
+
+# Récupère la clé depuis les variables d'environnement (GitHub Secrets)
+firebase_key_json = os.environ.get("FIREBASE_KEY")  
+>>>>>>> 4c0e830 (gestion des secrets)
 if firebase_key_json:
     with open(SERVICE_ACCOUNT_FILE, "w") as f:
         f.write(firebase_key_json)
@@ -34,8 +47,13 @@ if firebase_key_json:
 # ==========================
 # MQTT TOPICS
 # ==========================
+<<<<<<< HEAD
 MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
 MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
+=======
+MQTT_TELEMETRY_TOPIC_TEMPLATE = "planty/+/telemetry"
+MQTT_COMMAND_TOPIC_TEMPLATE = "planty/{device_id}/commands"
+>>>>>>> 4c0e830 (gestion des secrets)
 
 # ==========================
 # 1. MODELE DE DONNEES
@@ -48,7 +66,8 @@ class SensorData:
         self.light_level = float(lightLevel)
         self.humidity = float(humidity)
         ts = datetime.now() if timestamp is None else datetime.fromtimestamp(int(timestamp)/1000)
-        self.timestamp = ts.isoformat().replace(":", "_")
+        # Firebase n'aime pas ":" dans le path
+        self.timestamp = ts.strftime("%Y%m%d_%H%M%S_%f")
 
     def to_dict(self):
         return {
@@ -64,6 +83,9 @@ class SensorData:
 # 2. MOTEUR EMOTIONNEL
 # ==========================
 class EmotionEngine:
+    def __init__(self):
+        pass
+
     def determine_emotion(self, data: SensorData):
         if data.soil_moisture < 30: return "assoiffé"
         if data.temperature > 35: return "stressé"
@@ -75,6 +97,9 @@ class EmotionEngine:
 # 3. PRENEUR DE DECISION
 # ==========================
 class DecisionMaker:
+    def __init__(self):
+        pass
+
     def decide_action(self, emotion: str):
         if emotion == "assoiffé": return "WATER_PUMP:3000"
         if emotion == "stressé": return "SET_FAN_SPEED:150"
@@ -142,10 +167,14 @@ class MqttCommunicator:
         self.password = password
 
         # TLS obligatoire HiveMQ
+<<<<<<< HEAD
         self.client.tls_set(
             cert_reqs=ssl.CERT_REQUIRED,
             tls_version=ssl.PROTOCOL_TLS_CLIENT
         )
+=======
+        self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS_CLIENT)
+>>>>>>> 4c0e830 (gestion des secrets)
 
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
@@ -223,6 +252,15 @@ class APIService:
         except Exception as e:
             print(f"[Auth] Token invalide: {e}")
             return None
+    
+    def setup_routes(self):
+        @self.app.route('/upload', methods=['POST'])
+        def upload_file():
+            file = request.files.get('file')
+            if not file:
+                return {"error": "Aucun fichier fourni"}, 400
+            result = cloudinary.uploader.upload(file)
+            return {"url": result['secure_url']}
 
     def setup_routes(self):
         @self.app.route('/')
@@ -298,7 +336,11 @@ if __name__ == "__main__":
         username="hope_231",
         password="Japodisehell1234"
     )
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 4c0e830 (gestion des secrets)
     ingest_service = DataIngestService(mqtt_communicator, db_manager, emotion_engine, decision_maker)
     api_service = APIService(mqtt_communicator, db_manager)
 
