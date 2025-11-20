@@ -16,30 +16,19 @@ import ssl
 # CONFIGURATION CLOUDINARY
 # ==========================
 cloudinary.config(
-<<<<<<< HEAD
-    cloud_name="dzsvyfovr",
-    api_key="134458997237921",
-    api_secret="9_ssJtao-41cSsXO9nLfjcI0EDM"
-=======
     cloud_name="CLOUDINARY_CLOUD_NAME",
     api_key="CLOUDINARY_API_KEY",
     api_secret="CLOUDINARY_API_SECRET"
->>>>>>> 4c0e830 (gestion des secrets)
 )
 
 # ==========================
 # CONFIGURATION FIREBASE
 # ==========================
-<<<<<<< HEAD
 
-SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "smart.json")
-firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
-=======
 SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "smart.json")
 
 # Récupère la clé depuis les variables d'environnement (GitHub Secrets)
 firebase_key_json = os.environ.get("FIREBASE_KEY")  
->>>>>>> 4c0e830 (gestion des secrets)
 if firebase_key_json:
     with open(SERVICE_ACCOUNT_FILE, "w") as f:
         f.write(firebase_key_json)
@@ -47,13 +36,8 @@ if firebase_key_json:
 # ==========================
 # MQTT TOPICS
 # ==========================
-<<<<<<< HEAD
-MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
-MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
-=======
 MQTT_TELEMETRY_TOPIC_TEMPLATE = "planty/+/telemetry"
 MQTT_COMMAND_TOPIC_TEMPLATE = "planty/{device_id}/commands"
->>>>>>> 4c0e830 (gestion des secrets)
 
 # ==========================
 # 1. MODELE DE DONNEES
@@ -120,10 +104,8 @@ class DatabaseManager:
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred, {
                     'databaseURL': 'https://smart-plant-free-default-rtdb.firebaseio.com/',
-                    'storageBucket': 'smart-plant-iot-c-30ed4.appspot.com'
                 })
             self.db_root = db.reference("/")
-            self.bucket = storage.bucket()
             print("[DatabaseManager] ✅ Firebase initialisé avec succès.")
         except Exception as e:
             print(f"[DatabaseManager] ERREUR Firebase: {e}")
@@ -160,21 +142,14 @@ class DatabaseManager:
 # ==========================
 class MqttCommunicator:
     def __init__(self, mqtt_broker, mqtt_port, username=None, password=None):
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        self.client = mqtt.Client()
         self.broker = mqtt_broker
         self.port = mqtt_port
         self.username = username
         self.password = password
 
         # TLS obligatoire HiveMQ
-<<<<<<< HEAD
-        self.client.tls_set(
-            cert_reqs=ssl.CERT_REQUIRED,
-            tls_version=ssl.PROTOCOL_TLS_CLIENT
-        )
-=======
         self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS_CLIENT)
->>>>>>> 4c0e830 (gestion des secrets)
 
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
@@ -233,8 +208,6 @@ class DataIngestService:
             print(f"[Ingest] Erreur traitement message: {e}")
 
 # ==========================
-# 7. API SERVICE
-# ==========================
 class APIService:
     def __init__(self, communicator, db_manager):
         self.app = Flask(__name__)
@@ -243,35 +216,20 @@ class APIService:
         self.db_manager = db_manager
         self.metrics = PrometheusMetrics(self.app)
         self.metrics.info('app_info', 'Pot de Fleurs Émotionnel', version='1.0.0')
-        self.setup_routes()
 
-    def verify_token(self, id_token):
-        try:
-            decoded_token = auth.verify_id_token(id_token)
-            return decoded_token['uid']
-        except Exception as e:
-            print(f"[Auth] Token invalide: {e}")
-            return None
-    
-    def setup_routes(self):
-        @self.app.route('/upload', methods=['POST'])
-        def upload_file():
-            file = request.files.get('file')
-            if not file:
-                return {"error": "Aucun fichier fourni"}, 400
-            result = cloudinary.uploader.upload(file)
-            return {"url": result['secure_url']}
+        self.setup_routes()
 
     def setup_routes(self):
         @self.app.route('/')
         def home():
-            return "<h1>API du Pot de Fleurs Émotionnel</h1><p>Le service est en ligne.</p>"
+            return jsonify({"message": "Smart Garden API running"})
 
         @self.app.route('/plants/<plant_id>/state', methods=['GET'])
         def get_plant_state(plant_id):
             token = request.headers.get('Authorization')
             if not token or not self.verify_token(token):
                 return jsonify({"error": "Unauthorized"}), 401
+
             state = self.db_manager.get_latest_state(plant_id)
             return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
 
@@ -280,6 +238,7 @@ class APIService:
             token = request.headers.get('Authorization')
             if not token or not self.verify_token(token):
                 return jsonify({"error": "Unauthorized"}), 401
+
             history = self.db_manager.get_all_readings(plant_id)
             return jsonify(history) if history else (jsonify({"error": "Historique non trouvé"}), 404)
 
@@ -288,11 +247,12 @@ class APIService:
             token = request.headers.get('Authorization')
             if not token or not self.verify_token(token):
                 return jsonify({"error": "Unauthorized"}), 401
+
             data = request.get_json()
             command = data.get('command')
             if not command:
-                return jsonify({"error": "La clé 'command' est requise"}), 400
-            self.communicator.publish_command(plant_id, command)
+                return jsonify({"error": "Aucune commande reçue"}), 400
+
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
         @self.app.route('/admin/all-data', methods=['GET'])
@@ -303,19 +263,15 @@ class APIService:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route('/cdn/<user_id>/files', methods=['GET'])
-        def list_user_files(user_id):
-            token = request.headers.get('Authorization')
-            if not token or not self.verify_token(token):
-                return jsonify({"error": "Unauthorized"}), 401
-            try:
-                bucket = self.db_manager.bucket
-                blobs = bucket.list_blobs(prefix=f"{user_id}/")
-                files = [{"name": b.name, "url": b.generate_signed_url(timedelta(hours=1))} for b in blobs]
-                return jsonify({"files": files})
-            except Exception as e:
-                print(f"[CDN] Erreur list_user_files: {e}")
-                return jsonify({"error": "Erreur lors de la récupération des fichiers"}), 500
+
+
+    def verify_token(self, id_token):
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            return decoded_token['uid']
+        except Exception as e:
+            print(f"[Auth] Token invalide: {e}")
+            return None
 
     def run(self, host="0.0.0.0", port=5000):
         self.app.run(host=host, port=port, debug=False, use_reloader=False)
@@ -329,18 +285,19 @@ if __name__ == "__main__":
     db_manager = DatabaseManager(SERVICE_ACCOUNT_FILE)
     emotion_engine = EmotionEngine()
     decision_maker = DecisionMaker()
+    mqtt_broker = os.environ.get("MQTT_BROKER", "028e2afc7bff49aa9758e69dfebd7b17.s1.eu.hivemq.cloud")
+    mqtt_port = int(os.environ.get("MQTT_PORT", 8883))
+    mqtt_username = os.environ.get("MQTT_USERNAME", "hope_231")
+    mqtt_password = os.environ.get("MQTT_PASSWORD", "Japodisehell1234")
 
     mqtt_communicator = MqttCommunicator(
-        mqtt_broker="028e2afc7bff49aa9758e69dfebd7b17.s1.eu.hivemq.cloud",
-        mqtt_port=8883,
-        username="hope_231",
-        password="Japodisehell1234"
+      mqtt_broker=mqtt_broker,
+      mqtt_port=mqtt_port,
+      username=mqtt_username,
+      password=mqtt_password
     )
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 4c0e830 (gestion des secrets)
+
     ingest_service = DataIngestService(mqtt_communicator, db_manager, emotion_engine, decision_maker)
     api_service = APIService(mqtt_communicator, db_manager)
 

@@ -1,5 +1,6 @@
 # Ignore service account key
 smart_plant_layer3/serviceAccountKey.json
+smart_plant_layer3/smart.json
 <<<<<<< HEAD
 smart_plant_layer3/key_private.json
 smart_plant_layer3/iot_storage_service.json
