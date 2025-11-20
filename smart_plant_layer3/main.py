@@ -4,36 +4,41 @@ import json
 from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, db, auth, storage
 from prometheus_flask_exporter import PrometheusMetrics
 import cloudinary
 import cloudinary.uploader
+import ssl
 
+# ==========================
+# CONFIGURATION CLOUDINARY
+# ==========================
 cloudinary.config(
-  cloud_name = "dzsvyfovr",          # Ton Cloud name
-  api_key = "134458997237921",            # Remplace ici par ta clé API
-  api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"      # Remplace ici par ton secret
+    cloud_name="dzsvyfovr",
+    api_key="134458997237921",
+    api_secret="9_ssJtao-41cSsXO9nLfjcI0EDM"
 )
 
+# ==========================
+# CONFIGURATION FIREBASE
+# ==========================
 
-# ===================================================================
-# ÉTAPE 0 : CONFIGURATION
-# ===================================================================
-SERVICE_ACCOUNT_FILE = "private_key.json"
-
-SERVICE_ACCOUNT_FILE = "smart_key.json"
-
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "smart.json")
 firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 if firebase_key_json:
     with open(SERVICE_ACCOUNT_FILE, "w") as f:
         f.write(firebase_key_json)
 
+# ==========================
+# MQTT TOPICS
+# ==========================
 MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
 MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
 
 # ==========================
-# 1. MODÈLE DE DONNÉES
+# 1. MODELE DE DONNEES
 # ==========================
 class SensorData:
     def __init__(self, deviceId, soilMoisture, temperature, lightLevel, humidity, timestamp=None, **kwargs):
@@ -52,11 +57,11 @@ class SensorData:
             "temperature": self.temperature,
             "lightLevel": self.light_level,
             "humidity": self.humidity,
-            "timestamp": self.timestamp,
+            "timestamp": self.timestamp
         }
 
 # ==========================
-# 2. MOTEUR ÉMOTIONNEL
+# 2. MOTEUR EMOTIONNEL
 # ==========================
 class EmotionEngine:
     def determine_emotion(self, data: SensorData):
@@ -67,20 +72,24 @@ class EmotionEngine:
         return "neutre"
 
 # ==========================
-# 3. PRENEUR DE DÉCISION
+# 3. PRENEUR DE DECISION
 # ==========================
 class DecisionMaker:
     def decide_action(self, emotion: str):
-        if emotion == "assoiffé": return "WATER:3000"
-        if emotion == "stressé": return "FAN:90"
-        if emotion == "heureux": return "LED:GREEN"
+        if emotion == "assoiffé": return "WATER_PUMP:3000"
+        if emotion == "stressé": return "SET_FAN_SPEED:150"
+        if emotion == "heureux": return "SET_LED_COLOR:GREEN"
         return None
 
 # ==========================
-# 4. GESTIONNAIRE DE BASE DE DONNÉES
+# 4. DATABASE MANAGER
 # ==========================
 class DatabaseManager:
     def __init__(self, service_account_file):
+        print(f"[DatabaseManager] Tentative de connexion avec {service_account_file}")
+        if not os.path.exists(service_account_file):
+            print(f"❌ ERREUR : Le fichier '{service_account_file}' est introuvable !")
+            exit(1)
         try:
             cred = credentials.Certificate(service_account_file)
             if not firebase_admin._apps:
@@ -90,11 +99,10 @@ class DatabaseManager:
                 })
             self.db_root = db.reference("/")
             self.bucket = storage.bucket()
-            print("[DatabaseManager] ✅ Realtime Database initialisée avec succès.")
+            print("[DatabaseManager] ✅ Firebase initialisé avec succès.")
         except Exception as e:
             print(f"[DatabaseManager] ERREUR Firebase: {e}")
-            self.db_root = None
-            self.bucket = None
+            raise e
 
     def save_reading(self, device_id, data_dict):
         try:
@@ -123,27 +131,38 @@ class DatabaseManager:
             return None
 
 # ==========================
-# 5. COMMUNICATEUR MQTT
+# 5. MQTT COMMUNICATOR
 # ==========================
 class MqttCommunicator:
-    def __init__(self, mqtt_broker, mqtt_port):
-        self.client = mqtt.Client()
+    def __init__(self, mqtt_broker, mqtt_port, username=None, password=None):
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.broker = mqtt_broker
         self.port = mqtt_port
+        self.username = username
+        self.password = password
+
+        # TLS obligatoire HiveMQ
+        self.client.tls_set(
+            cert_reqs=ssl.CERT_REQUIRED,
+            tls_version=ssl.PROTOCOL_TLS_CLIENT
+        )
+
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
 
-    def _on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
+    def _on_connect(self, client, userdata, flags, reasonCode, properties=None):
+        if reasonCode == 0:
             print("[MQTT] ✅ Connecté au broker MQTT !")
             self.client.subscribe(MQTT_TELEMETRY_TOPIC_TEMPLATE)
         else:
-            print(f"[MQTT] Erreur connexion: {rc}")
+            print(f"[MQTT] ❌ Échec connexion MQTT, code: {reasonCode}")
 
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
+    def _on_subscribe(self, client, userdata, mid, granted_qos, properties=None):
         print(f"[MQTT] Souscription réussie avec QoS {granted_qos[0]}")
 
     def connect(self):
+        if self.username and self.password:
+            self.client.username_pw_set(self.username, self.password)
         self.client.connect(self.broker, self.port, 60)
 
     def start_listening(self):
@@ -158,7 +177,7 @@ class MqttCommunicator:
         self.client.on_message = callback
 
 # ==========================
-# 6. SERVICE D'INGESTION
+# 6. DATA INGEST SERVICE
 # ==========================
 class DataIngestService:
     def __init__(self, communicator, db_manager, emotion_engine, decision_maker):
@@ -185,11 +204,12 @@ class DataIngestService:
             print(f"[Ingest] Erreur traitement message: {e}")
 
 # ==========================
-# 7. SERVICE API + CDN
+# 7. API SERVICE
 # ==========================
 class APIService:
     def __init__(self, communicator, db_manager):
         self.app = Flask(__name__)
+        CORS(self.app)
         self.communicator = communicator
         self.db_manager = db_manager
         self.metrics = PrometheusMetrics(self.app)
@@ -237,24 +257,23 @@ class APIService:
             self.communicator.publish_command(plant_id, command)
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
-        # ROUTE CDN 
+        @self.app.route('/admin/all-data', methods=['GET'])
+        def get_entire_database():
+            try:
+                all_data = self.db_manager.db_root.get()
+                return jsonify(all_data)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
         @self.app.route('/cdn/<user_id>/files', methods=['GET'])
         def list_user_files(user_id):
             token = request.headers.get('Authorization')
             if not token or not self.verify_token(token):
                 return jsonify({"error": "Unauthorized"}), 401
-            
             try:
                 bucket = self.db_manager.bucket
-                prefix = f"{user_id}/"
-                blobs = bucket.list_blobs(prefix=prefix)
-                files = [
-                    {
-                        "name": b.name,
-                        "url": b.generate_signed_url(timedelta(hours=1))
-                    }
-                    for b in blobs
-                ]
+                blobs = bucket.list_blobs(prefix=f"{user_id}/")
+                files = [{"name": b.name, "url": b.generate_signed_url(timedelta(hours=1))} for b in blobs]
                 return jsonify({"files": files})
             except Exception as e:
                 print(f"[CDN] Erreur list_user_files: {e}")
@@ -273,7 +292,13 @@ if __name__ == "__main__":
     emotion_engine = EmotionEngine()
     decision_maker = DecisionMaker()
 
-    mqtt_communicator = MqttCommunicator("broker.hivemq.com", 1883)
+    mqtt_communicator = MqttCommunicator(
+        mqtt_broker="028e2afc7bff49aa9758e69dfebd7b17.s1.eu.hivemq.cloud",
+        mqtt_port=8883,
+        username="hope_231",
+        password="Japodisehell1234"
+    )
+    
     ingest_service = DataIngestService(mqtt_communicator, db_manager, emotion_engine, decision_maker)
     api_service = APIService(mqtt_communicator, db_manager)
 
@@ -282,4 +307,4 @@ if __name__ == "__main__":
 
     print("\n🌼 Le service est prêt. En attente des données de l'ESP32...")
     print("🌐 L'API est accessible sur http://localhost:5000")
-    api_service.run() 
+    api_service.run()
