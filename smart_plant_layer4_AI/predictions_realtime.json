@@ -1,0 +1,82 @@
+[
+  {
+    "deviceId": "PLANT-001",
+    "hours_ahead": 24,
+    "temperature": 24.37,
+    "humidity": 37.71,
+    "lightLevel": 542.02,
+    "soilMoisture": 23.57,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "PLANT-001",
+    "hours_ahead": 48,
+    "temperature": 24.37,
+    "humidity": 37.71,
+    "lightLevel": 542.02,
+    "soilMoisture": 23.57,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "PLANT-002",
+    "hours_ahead": 24,
+    "temperature": 23.08,
+    "humidity": 42.98,
+    "lightLevel": 515.66,
+    "soilMoisture": 30.07,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "PLANT-002",
+    "hours_ahead": 48,
+    "temperature": 23.08,
+    "humidity": 42.98,
+    "lightLevel": 515.66,
+    "soilMoisture": 30.07,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "PLANT-003",
+    "hours_ahead": 24,
+    "temperature": 29.45,
+    "humidity": 19.62,
+    "lightLevel": 751.13,
+    "soilMoisture": 9.0,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "PLANT-003",
+    "hours_ahead": 48,
+    "temperature": 29.45,
+    "humidity": 19.62,
+    "lightLevel": 751.13,
+    "soilMoisture": 9.0,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "planty_68607bd82240",
+    "hours_ahead": 24,
+    "temperature": 0.29,
+    "humidity": 22.4,
+    "lightLevel": 68.6,
+    "soilMoisture": 0.41,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  },
+  {
+    "deviceId": "planty_68607bd82240",
+    "hours_ahead": 48,
+    "temperature": 0.29,
+    "humidity": 22.4,
+    "lightLevel": 68.6,
+    "soilMoisture": 0.52,
+    "emotion_predicted": "assoiffé",
+    "model": "LSTM + Contraintes physiques"
+  }
+]

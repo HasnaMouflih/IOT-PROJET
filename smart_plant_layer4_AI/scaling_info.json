@@ -1,0 +1,25 @@
+{
+    "X_min": {
+        "temperature": -1.0,
+        "humidity": 2.2,
+        "lightLevel": 54.0,
+        "soilMoisture": 0.0
+    },
+    "X_max": {
+        "temperature": 33.0,
+        "humidity": 50.0,
+        "lightLevel": 1300.0,
+        "soilMoisture": 40.0
+    },
+    "emotion_map": {
+        "neutre": 0,
+        "assoiffé": 1,
+        "stressé": 2
+    },
+    "data_source": "API Firebase (temps réel)",
+    "total_records": 121,
+    "sequence_length": 5,
+    "lstm_sequences": 116,
+    "xgb_train_score": 0.9891304347826086,
+    "xgb_test_score": 0.9166666666666666
+}
