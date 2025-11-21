@@ -41,3 +41,34 @@ scaling_info.json
 # OS
 Thumbs.db
 .DS_Store
+ 
+
+
+ # Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+ENV/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Model files
+*.h5
+*.pt
+*.pth
+*.joblib
+
+# Secrets
+*.json
+*.env
+secrets/
