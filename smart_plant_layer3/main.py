@@ -10,54 +10,84 @@ from firebase_admin import credentials, db, auth, storage
 from prometheus_flask_exporter import PrometheusMetrics
 import cloudinary
 import cloudinary.uploader
+import ssl
 
-# Configuration Cloudinary
-cloudinary.config(
-  cloud_name = "dzsvyfovr",
-  api_key = "134458997237921",
-  api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"
-)
+# # Configuration Cloudinary
+# cloudinary.config(
+#   cloud_name = "dzsvyfovr",
+#   api_key = "134458997237921",
+#   api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"
+# )
 
-import os
+# import os
 
-# ===================================================================
-# ÉTAPE 0 : CONFIGURATION
-# ===================================================================
+# # ===================================================================
+# # ÉTAPE 0 : CONFIGURATION
+# # ===================================================================
 
-# 1. Chemin par défaut (pour le développement local, si le fichier existe)
-LOCAL_KEY_FILE = "smart.json" 
+# # 1. Chemin par défaut (pour le développement local, si le fichier existe)
+# LOCAL_KEY_FILE = "smart.json" 
 
-# 2. Chemin temporaire et sécurisé pour le déploiement (Render)
-DEPLOY_KEY_FILE = "/tmp/firebase_service_account.json" 
+# # 2. Chemin temporaire et sécurisé pour le déploiement (Render)
+# DEPLOY_KEY_FILE = "/tmp/firebase_service_account.json" 
 
-# Récupère le contenu JSON depuis la variable d'environnement (si elle est définie par Render)
-firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+# # Récupère le contenu JSON depuis la variable d'environnement (si elle est définie par Render)
+# firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 
-if firebase_key_json:
-    # Si nous sommes en production/déploiement (FIREBASE_SERVICE_ACCOUNT_JSON est défini)
+# if firebase_key_json:
+#     # Si nous sommes en production/déploiement (FIREBASE_SERVICE_ACCOUNT_JSON est défini)
     
-    # Écrit le contenu du secret dans un fichier temporaire sécurisé
-    with open(DEPLOY_KEY_FILE, "w") as f:
-        f.write(firebase_key_json)
+#     # Écrit le contenu du secret dans un fichier temporaire sécurisé
+#     with open(DEPLOY_KEY_FILE, "w") as f:
+#         f.write(firebase_key_json)
         
-    # Le chemin que le DatabaseManager utilisera
-    SERVICE_ACCOUNT_FILE = DEPLOY_KEY_FILE 
-    print(f"[Config] Mode Production: Utilisation de la clé temporaire {DEPLOY_KEY_FILE}")
+#     # Le chemin que le DatabaseManager utilisera
+#     SERVICE_ACCOUNT_FILE = DEPLOY_KEY_FILE 
+#     print(f"[Config] Mode Production: Utilisation de la clé temporaire {DEPLOY_KEY_FILE}")
 
-else:
-    # Si nous sommes en développement local (FIREBASE_SERVICE_ACCOUNT_JSON n'est PAS défini)
+# else:
+#     # Si nous sommes en développement local (FIREBASE_SERVICE_ACCOUNT_JSON n'est PAS défini)
     
-    # Le chemin que le DatabaseManager utilisera
-    SERVICE_ACCOUNT_FILE = LOCAL_KEY_FILE
-    print(f"[Config] Mode Local: Utilisation du fichier {LOCAL_KEY_FILE}")
+#     # Le chemin que le DatabaseManager utilisera
+#     SERVICE_ACCOUNT_FILE = LOCAL_KEY_FILE
+#     print(f"[Config] Mode Local: Utilisation du fichier {LOCAL_KEY_FILE}")
 
 
-# Configuration MQTT (inchangée)
-MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
-MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
+# # Configuration MQTT (inchangée)
+# MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
+# MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
 
 # ==========================
-# 1. MODÈLE DE DONNÉES
+# CONFIGURATION CLOUDINARY
+# ==========================
+cloudinary.config(
+    cloud_name="CLOUDINARY_CLOUD_NAME",
+    api_key="CLOUDINARY_API_KEY",
+    api_secret="CLOUDINARY_API_SECRET"
+)
+
+# ==========================
+# CONFIGURATION FIREBASE
+# ==========================
+
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), "smart.json")
+
+# Récupère la clé depuis les variables d'environnement (GitHub Secrets)
+firebase_key_json = os.environ.get("FIREBASE_KEY")  
+if firebase_key_json:
+    with open(SERVICE_ACCOUNT_FILE, "w") as f:
+        f.write(firebase_key_json)
+
+# ==========================
+# MQTT TOPICS
+# ==========================
+MQTT_TELEMETRY_TOPIC_TEMPLATE = "planty/+/telemetry"
+MQTT_COMMAND_TOPIC_TEMPLATE = "planty/{device_id}/commands"
+
+
+
+# ==========================
+# 1. MODELE DE DONNEES
 # ==========================
 class SensorData:
     def __init__(self, deviceId, soilMoisture, temperature, lightLevel, humidity, timestamp=None, **kwargs):
@@ -67,7 +97,8 @@ class SensorData:
         self.light_level = float(lightLevel)
         self.humidity = float(humidity)
         ts = datetime.now() if timestamp is None else datetime.fromtimestamp(int(timestamp)/1000)
-        self.timestamp = ts.isoformat().replace(":", "_")
+        # Firebase n'aime pas ":" dans le path
+        self.timestamp = ts.strftime("%Y%m%d_%H%M%S_%f")
 
     def to_dict(self):
         return {
@@ -76,13 +107,16 @@ class SensorData:
             "temperature": self.temperature,
             "lightLevel": self.light_level,
             "humidity": self.humidity,
-            "timestamp": self.timestamp,
+            "timestamp": self.timestamp
         }
 
 # ==========================
-# 2. MOTEUR ÉMOTIONNEL
+# 2. MOTEUR EMOTIONNEL
 # ==========================
 class EmotionEngine:
+    def __init__(self):
+        pass
+
     def determine_emotion(self, data: SensorData):
         if data.soil_moisture < 30: return "assoiffé"
         if data.temperature > 35: return "stressé"
@@ -91,42 +125,38 @@ class EmotionEngine:
         return "neutre"
 
 # ==========================
-# 3. PRENEUR DE DÉCISION
+# 3. PRENEUR DE DECISION
 # ==========================
 class DecisionMaker:
+    def __init__(self):
+        pass
+
     def decide_action(self, emotion: str):
-        if emotion == "assoiffé": return "WATER:3000"
-        if emotion == "stressé": return "FAN:90"
-        if emotion == "heureux": return "LED:GREEN"
+        if emotion == "assoiffé": return "WATER_PUMP:3000"
+        if emotion == "stressé": return "SET_FAN_SPEED:150"
+        if emotion == "heureux": return "SET_LED_COLOR:GREEN"
         return None
 
 # ==========================
-# 4. GESTIONNAIRE DE BASE DE DONNÉES (CORRIGÉ)
+# 4. DATABASE MANAGER
 # ==========================
 class DatabaseManager:
     def __init__(self, service_account_file):
-        print(f"[DatabaseManager] Tentative de connexion avec le fichier : {service_account_file}")
-        
-        # On vérifie si le fichier existe
+        print(f"[DatabaseManager] Tentative de connexion avec {service_account_file}")
         if not os.path.exists(service_account_file):
-            print(f"❌ ERREUR CRITIQUE : Le fichier '{service_account_file}' est introuvable !")
-            print("Assurez-vous que le fichier JSON est bien dans le même dossier que ce script.")
-            exit(1) # On arrête le script ici
-
+            print(f"❌ ERREUR : Le fichier '{service_account_file}' est introuvable !")
+            exit(1)
         try:
             cred = credentials.Certificate(service_account_file)
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred, {
                     'databaseURL': 'https://smart-plant-free-default-rtdb.firebaseio.com/',
-                    'storageBucket': 'smart-plant-iot-c-30ed4.appspot.com'
                 })
             self.db_root = db.reference("/")
-            self.bucket = storage.bucket()
-            print("[DatabaseManager] ✅ Realtime Database initialisée avec succès.")
+            print("[DatabaseManager] ✅ Firebase initialisé avec succès.")
         except Exception as e:
-            print(f"❌ ERREUR CRITIQUE Firebase : {e}")
-            # On force l'arrêt pour ne pas avoir l'erreur NoneType plus tard
-            raise e 
+            print(f"[DatabaseManager] ERREUR Firebase: {e}")
+            raise e
 
     def save_reading(self, device_id, data_dict):
         try:
@@ -147,27 +177,35 @@ class DatabaseManager:
         readings = self.db_root.child("plants").child(plant_id).child("readings").get()
         return list(readings.values()) if readings else []
 # ==========================
-# 5. COMMUNICATEUR MQTT
+# 5. MQTT COMMUNICATOR
 # ==========================
 class MqttCommunicator:
-    def __init__(self, mqtt_broker, mqtt_port):
+    def __init__(self, mqtt_broker, mqtt_port, username=None, password=None):
         self.client = mqtt.Client()
         self.broker = mqtt_broker
         self.port = mqtt_port
+        self.username = username
+        self.password = password
+
+        # TLS obligatoire HiveMQ
+        self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS_CLIENT)
+
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
 
-    def _on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
+    def _on_connect(self, client, userdata, flags, reasonCode, properties=None):
+        if reasonCode == 0:
             print("[MQTT] ✅ Connecté au broker MQTT !")
             self.client.subscribe(MQTT_TELEMETRY_TOPIC_TEMPLATE)
         else:
-            print(f"[MQTT] Erreur connexion: {rc}")
+            print(f"[MQTT] ❌ Échec connexion MQTT, code: {reasonCode}")
 
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
+    def _on_subscribe(self, client, userdata, mid, granted_qos, properties=None):
         print(f"[MQTT] Souscription réussie avec QoS {granted_qos[0]}")
 
     def connect(self):
+        if self.username and self.password:
+            self.client.username_pw_set(self.username, self.password)
         self.client.connect(self.broker, self.port, 60)
 
     def start_listening(self):
@@ -182,7 +220,7 @@ class MqttCommunicator:
         self.client.on_message = callback
 
 # ==========================
-# 6. SERVICE D'INGESTION
+# 6. DATA INGEST SERVICE
 # ==========================
 class DataIngestService:
     def __init__(self, communicator, db_manager, emotion_engine, decision_maker):
@@ -209,8 +247,6 @@ class DataIngestService:
             print(f"[Ingest] Erreur traitement message: {e}")
 
 # ==========================
-# 7. SERVICE API + CDN
-# ==========================
 class APIService:
     def __init__(self, communicator, db_manager):
         self.app = Flask(__name__)
@@ -219,7 +255,68 @@ class APIService:
         self.db_manager = db_manager
         self.metrics = PrometheusMetrics(self.app)
         self.metrics.info('app_info', 'Pot de Fleurs Émotionnel', version='1.0.0')
+
         self.setup_routes()
+
+    def setup_routes(self):
+        @self.app.route('/')
+        def home():
+            return jsonify({"message": "Smart Garden API running"})
+
+        @self.app.route('/plants/<plant_id>/state', methods=['GET'])
+        def get_plant_state(plant_id):
+            token = request.headers.get('Authorization')
+            if not token or not self.verify_token(token):
+                return jsonify({"error": "Unauthorized"}), 401
+
+            state = self.db_manager.get_latest_state(plant_id)
+            print(f"[DEBUG] get_latest_state({plant_id}) returned:", state)
+            return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
+
+        @self.app.route('/plants/<plant_id>/history', methods=['GET'])
+        def get_plant_history(plant_id):
+            token = request.headers.get('Authorization')
+            if not token or not self.verify_token(token):
+                return jsonify({"error": "Unauthorized"}), 401
+
+            history = self.db_manager.get_all_readings(plant_id)
+            return jsonify(history) if history else (jsonify({"error": "Historique non trouvé"}), 404)
+
+        @self.app.route('/plants/<plant_id>/command', methods=['POST'])
+        def send_manual_command(plant_id):
+            token = request.headers.get('Authorization')
+            if not token or not self.verify_token(token):
+                return jsonify({"error": "Unauthorized"}), 401
+
+            data = request.get_json()
+            command = data.get('command')
+            if not command:
+                return jsonify({"error": "Aucune commande reçue"}), 400
+
+            return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
+
+        # ROUTE CDN 
+        # Ajoutez ceci sous vos autres routes
+        # @self.app.route('/admin/all-data', methods=['GET'])
+        # def get_entire_database():
+        #     # Récupère tout depuis la racine "/"
+        #     try:
+        #         all_data = self.db_manager.db_root.get()
+        #         return jsonify(all_data)
+        #     except Exception as e:
+        #         return jsonify({"error": str(e)}), 500
+
+
+        @self.app.route('/admin/all-data', methods=['GET'])
+        def get_entire_database():
+
+            try:
+                all_data = self.db_manager.db_root.get()
+                return jsonify(all_data)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+
 
     def verify_token(self, id_token):
         try:
@@ -228,95 +325,6 @@ class APIService:
         except Exception as e:
             print(f"[Auth] Token invalide: {e}")
             return None
-
-    def setup_routes(self):
-        @self.app.route('/')
-        def home():
-            return "<h1>API du Pot de Fleurs Émotionnel</h1><p>Le service est en ligne.</p>"
-
-        @self.app.route('/plants/<plant_id>/state', methods=['GET'])
-        def get_plant_state(plant_id):
-            # --- SECTION SÉCURITÉ (Désactivée pour tester) ---
-            # Pour réactiver, décommentez ces lignes :
-            
-            # auth_header = request.headers.get('Authorization')
-            # if not auth_header:
-            #     return jsonify({"error": "Unauthorized: No token provided"}), 401
-            # 
-            # # Nettoyage du token (enlève "Bearer " si présent)
-            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-            # 
-            # if not self.verify_token(token):
-            #     return jsonify({"error": "Unauthorized: Invalid token"}), 401
-            
-            # --- FIN SECTION SÉCURITÉ ---
-
-            state = self.db_manager.get_latest_state(plant_id)
-            print(f"[DEBUG] get_latest_state({plant_id}) returned:", state)
-            return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
-
-        @self.app.route('/plants/<plant_id>/history', methods=['GET'])
-        def get_plant_history(plant_id):
-            # --- SÉCURITÉ DÉSACTIVÉE ---
-            # auth_header = request.headers.get('Authorization')
-            # if not auth_header: return jsonify({"error": "Unauthorized"}), 401
-            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-            # if not self.verify_token(token): return jsonify({"error": "Unauthorized"}), 401
-            # ---------------------------
-
-            history = self.db_manager.get_all_readings(plant_id)
-            return jsonify(history) if history else (jsonify({"error": "Historique non trouvé"}), 404)
-
-        @self.app.route('/plants/<plant_id>/command', methods=['POST'])
-        def send_manual_command(plant_id):
-            # --- SÉCURITÉ DÉSACTIVÉE ---
-            # auth_header = request.headers.get('Authorization')
-            # if not auth_header: return jsonify({"error": "Unauthorized"}), 401
-            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-            # if not self.verify_token(token): return jsonify({"error": "Unauthorized"}), 401
-            # ---------------------------
-
-            data = request.get_json()
-            command = data.get('command')
-            if not command:
-                return jsonify({"error": "La clé 'command' est requise"}), 400
-            self.communicator.publish_command(plant_id, command)
-            return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
-
-        # ROUTE CDN 
-        # Ajoutez ceci sous vos autres routes
-        @self.app.route('/admin/all-data', methods=['GET'])
-        def get_entire_database():
-            # Récupère tout depuis la racine "/"
-            try:
-                all_data = self.db_manager.db_root.get()
-                return jsonify(all_data)
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
-        @self.app.route('/cdn/<user_id>/files', methods=['GET'])
-        def list_user_files(user_id):
-            # --- SÉCURITÉ DÉSACTIVÉE ---
-            # auth_header = request.headers.get('Authorization')
-            # if not auth_header: return jsonify({"error": "Unauthorized"}), 401
-            # token = auth_header.split(" ")[1] if " " in auth_header else auth_header
-            # if not self.verify_token(token): return jsonify({"error": "Unauthorized"}), 401
-            # ---------------------------
-            
-            try:
-                bucket = self.db_manager.bucket
-                prefix = f"{user_id}/"
-                blobs = bucket.list_blobs(prefix=prefix)
-                files = [
-                    {
-                        "name": b.name,
-                        "url": b.generate_signed_url(timedelta(hours=1))
-                    }
-                    for b in blobs
-                ]
-                return jsonify({"files": files})
-            except Exception as e:
-                print(f"[CDN] Erreur list_user_files: {e}")
-                return jsonify({"error": "Erreur lors de la récupération des fichiers"}), 500
 
     def run(self, host="0.0.0.0", port=5000):
         self.app.run(host=host, port=port, debug=False, use_reloader=False)
@@ -331,8 +339,19 @@ if __name__ == "__main__":
     db_manager = DatabaseManager(SERVICE_ACCOUNT_FILE)
     emotion_engine = EmotionEngine()
     decision_maker = DecisionMaker()
+    mqtt_broker = os.environ.get("MQTT_BROKER", "028e2afc7bff49aa9758e69dfebd7b17.s1.eu.hivemq.cloud")
+    mqtt_port = int(os.environ.get("MQTT_PORT", 8883))
+    mqtt_username = os.environ.get("MQTT_USERNAME", "hope_231")
+    mqtt_password = os.environ.get("MQTT_PASSWORD", "Japodisehell1234")
 
-    mqtt_communicator = MqttCommunicator("broker.hivemq.com", 1883)
+    mqtt_communicator = MqttCommunicator(
+      mqtt_broker=mqtt_broker,
+      mqtt_port=mqtt_port,
+      username=mqtt_username,
+      password=mqtt_password
+    )
+
+
     ingest_service = DataIngestService(mqtt_communicator, db_manager, emotion_engine, decision_maker)
     api_service = APIService(mqtt_communicator, db_manager)
 
