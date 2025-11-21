@@ -28,15 +28,19 @@
   gap: 20px;
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Cartes de mesures */
+/* Measure cards (desktop view) */
 .measure-card {
-  flex: 1 1 180px;
-  max-width: 220px;
+  flex: 0 0 180px;          /* fixed width on large screens */
+  width: 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 25px;
   border-radius: 15px;
@@ -44,6 +48,7 @@
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 
 .measure-card:hover {
   transform: translateY(-5px);
@@ -62,10 +67,10 @@
 }
 
 .plant-status-card {
-  flex: 1 1 300px;  /* minimum 400px, peut s'étendre */
-  max-width: 420px;  /* limite maximale */
+  flex: 1 1 280px;  /* minimum 400px, peut s'étendre */
+  max-width: 400px;  /* limite maximale */
   margin: 0;         /* supprime le margin auto */
-  padding: 40px 0px;
+  padding: 24px 0px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -77,11 +82,11 @@
 }
 
 
-
+/* 
 .plant-status-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-}
+} */
 
 .plant-status-card h2 {
   font-size: 1.5rem;
@@ -150,17 +155,36 @@
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr; /* default: 1 chart per row */
   gap: 1.5rem;
 }
 
+/* Medium screens: 2 charts per row */
+@media (min-width: 900px) {
+  .charts-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+/* Large screens: 3 charts per row */
+@media (min-width: 1300px) {
+  .charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+
+
 .chart-card {
+     /* let it fill the column */
+  height: 200px; /* fixed height so chart is visible */
+  padding: 1rem;
   background: #f9fafb;
   border-radius: 12px;
-  padding: 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 
 .chart-card:hover {
   transform: translateY(-3px);
@@ -226,12 +250,17 @@
 }
 
 .command-panel-card {
-  flex: 1 1 300px;
-  max-width: 400px;
-  padding: 30px;
-  border-radius: 15px;
-  background: linear-gradient(145deg, #ffffff, #ffffff);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  flex: 1 1 280px;
+  max-width: 360px;
+  padding: 24px 24px 80px 24px;
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .command-panel-card h3  {
@@ -266,3 +295,21 @@
 .command-buttons button:active {
   transform: translateY(0);
 }
+/* Hide sidebar on small screens */
+@media (max-width: 900px) {
+  .sidebar {
+    display: none;
+  }
+
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .dashboard-main {
+    width: 100%;
+    padding: 10px;
+  }
+ 
+}
+
+

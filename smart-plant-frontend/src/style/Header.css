@@ -12,8 +12,11 @@
 }
 
 .logo {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: #2b7a4b;
 }
 
@@ -45,11 +48,38 @@
 .header-icons button:hover {
   transform: scale(1.2);
 }
-.logo {
-  font-size: 1.8rem;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem; /* espace entre l'icône et le texte */
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none; /* hide nav links on tablet/mobile */
+    position: absolute;
+    top: 70px;
+    right: 0;
+    background: #fff;
+    flex-direction: column;
+    width: 200px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .nav-links.active {
+    display: flex;
+  }
+
+  .header {
+    padding: 10px 20px;
+  }
 }
 
+@media (max-width: 480px) {
+  .logo {
+    font-size: 1.5rem;
+  }
+
+  .header-icons button {
+    font-size: 1rem;
+    margin-left: 10px;
+  }
+}

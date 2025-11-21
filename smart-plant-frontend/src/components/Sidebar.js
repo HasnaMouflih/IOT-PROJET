@@ -1,5 +1,5 @@
 import React from "react";
-import { FaLeaf, FaChartLine, FaCog, FaSignOutAlt } from "react-icons/fa";
+import { FaLeaf, FaChartLine, FaCog, FaSignOutAlt ,FaChartBar, FaSeedling, FaHistory, FaBrain, FaRobot } from "react-icons/fa";
 import "../style/Sidebar.css";
 import PersonImage from "../assets/person.png"; // ton image PNG sans background
 
@@ -15,13 +15,25 @@ function Sidebar({ activeItem, setActiveItem }) {
           className={activeItem === "plant" ? "active" : ""}
           onClick={() => setActiveItem("plant")}
         >
-          <FaChartLine /> État de la plante
+          <FaSeedling /> État de la plante
+        </li>
+        <li
+          className={activeItem === "statistiques" ? "active" : ""}
+          onClick={() => setActiveItem("statistiques")}
+        >
+          <FaChartBar /> Statistiques et Analyses
         </li>
         <li
           className={activeItem === "history" ? "active" : ""}
           onClick={() => setActiveItem("history")}
         >
-          <FaChartLine /> Historique
+          < FaHistory/> Historique
+        </li>
+        <li
+          className={activeItem === "prediction" ? "active" : ""}
+          onClick={() => setActiveItem("prediction")}
+        >
+          < FaRobot/> AI Prédiction
         </li>
         <li
           className={activeItem === "settings" ? "active" : ""}

@@ -4,7 +4,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 
 // Initialize the cors middleware
 const cors = Cors({
-  origin: "http://localhost:3001", // 👈 your React frontend
+  origin: "http://localhost:3000", // 👈 your React frontend
   methods: ["GET", "POST", "OPTIONS"],
 });
 

@@ -4,13 +4,58 @@ import json
 from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # <--- NOUVEAU : Pour autoriser React
 import firebase_admin
 from firebase_admin import credentials, db, auth, storage
 from prometheus_flask_exporter import PrometheusMetrics
 import cloudinary
 import cloudinary.uploader
 import ssl
+
+# # Configuration Cloudinary
+# cloudinary.config(
+#   cloud_name = "dzsvyfovr",
+#   api_key = "134458997237921",
+#   api_secret = "9_ssJtao-41cSsXO9nLfjcI0EDM"
+# )
+
+# import os
+
+# # ===================================================================
+# # ÉTAPE 0 : CONFIGURATION
+# # ===================================================================
+
+# # 1. Chemin par défaut (pour le développement local, si le fichier existe)
+# LOCAL_KEY_FILE = "smart.json" 
+
+# # 2. Chemin temporaire et sécurisé pour le déploiement (Render)
+# DEPLOY_KEY_FILE = "/tmp/firebase_service_account.json" 
+
+# # Récupère le contenu JSON depuis la variable d'environnement (si elle est définie par Render)
+# firebase_key_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+
+# if firebase_key_json:
+#     # Si nous sommes en production/déploiement (FIREBASE_SERVICE_ACCOUNT_JSON est défini)
+    
+#     # Écrit le contenu du secret dans un fichier temporaire sécurisé
+#     with open(DEPLOY_KEY_FILE, "w") as f:
+#         f.write(firebase_key_json)
+        
+#     # Le chemin que le DatabaseManager utilisera
+#     SERVICE_ACCOUNT_FILE = DEPLOY_KEY_FILE 
+#     print(f"[Config] Mode Production: Utilisation de la clé temporaire {DEPLOY_KEY_FILE}")
+
+# else:
+#     # Si nous sommes en développement local (FIREBASE_SERVICE_ACCOUNT_JSON n'est PAS défini)
+    
+#     # Le chemin que le DatabaseManager utilisera
+#     SERVICE_ACCOUNT_FILE = LOCAL_KEY_FILE
+#     print(f"[Config] Mode Local: Utilisation du fichier {LOCAL_KEY_FILE}")
+
+
+# # Configuration MQTT (inchangée)
+# MQTT_TELEMETRY_TOPIC_TEMPLATE = "plant/+/telemetry"
+# MQTT_COMMAND_TOPIC_TEMPLATE = "plant/{device_id}/commands"
 
 # ==========================
 # CONFIGURATION CLOUDINARY
@@ -38,6 +83,8 @@ if firebase_key_json:
 # ==========================
 MQTT_TELEMETRY_TOPIC_TEMPLATE = "planty/+/telemetry"
 MQTT_COMMAND_TOPIC_TEMPLATE = "planty/{device_id}/commands"
+
+
 
 # ==========================
 # 1. MODELE DE DONNEES
@@ -123,20 +170,12 @@ class DatabaseManager:
             return False
 
     def get_latest_state(self, plant_id):
-        try:
-            return self.db_root.child("plants").child(plant_id).child("last_update").get()
-        except Exception as e:
-            print(f"[DatabaseManager] Erreur get_latest_state: {e}")
-            return None
+        # Plus de try/except ici pour voir l'erreur brute si elle survient
+        return self.db_root.child("plants").child(plant_id).child("last_update").get()
 
     def get_all_readings(self, plant_id):
-        try:
-            readings = self.db_root.child("plants").child(plant_id).child("readings").get()
-            return list(readings.values()) if readings else []
-        except Exception as e:
-            print(f"[DatabaseManager] Erreur get_all_readings: {e}")
-            return None
-
+        readings = self.db_root.child("plants").child(plant_id).child("readings").get()
+        return list(readings.values()) if readings else []
 # ==========================
 # 5. MQTT COMMUNICATOR
 # ==========================
@@ -211,7 +250,7 @@ class DataIngestService:
 class APIService:
     def __init__(self, communicator, db_manager):
         self.app = Flask(__name__)
-        CORS(self.app)
+        CORS(self.app) # <--- AJOUT IMPORTANT : Active CORS pour React
         self.communicator = communicator
         self.db_manager = db_manager
         self.metrics = PrometheusMetrics(self.app)
@@ -231,6 +270,7 @@ class APIService:
                 return jsonify({"error": "Unauthorized"}), 401
 
             state = self.db_manager.get_latest_state(plant_id)
+            print(f"[DEBUG] get_latest_state({plant_id}) returned:", state)
             return jsonify(state) if state else (jsonify({"error": "Plante non trouvée"}), 404)
 
         @self.app.route('/plants/<plant_id>/history', methods=['GET'])
@@ -255,8 +295,21 @@ class APIService:
 
             return jsonify({"message": f"Commande '{command}' envoyée à {plant_id}"}), 200
 
+        # ROUTE CDN 
+        # Ajoutez ceci sous vos autres routes
+        # @self.app.route('/admin/all-data', methods=['GET'])
+        # def get_entire_database():
+        #     # Récupère tout depuis la racine "/"
+        #     try:
+        #         all_data = self.db_manager.db_root.get()
+        #         return jsonify(all_data)
+        #     except Exception as e:
+        #         return jsonify({"error": str(e)}), 500
+
+
         @self.app.route('/admin/all-data', methods=['GET'])
         def get_entire_database():
+
             try:
                 all_data = self.db_manager.db_root.get()
                 return jsonify(all_data)
@@ -275,6 +328,7 @@ class APIService:
 
     def run(self, host="0.0.0.0", port=5000):
         self.app.run(host=host, port=port, debug=False, use_reloader=False)
+
 
 # ==========================
 # MAIN
