@@ -1,0 +1,39 @@
+# --- Environnements virtuels ---
+tfenv/
+venv/
+.env/
+*.env
+
+# --- Fichiers sensibles ---
+smart_plant_layer4_AI/smart.json
+smart_plant_layer4/smart.json
+
+# --- Gros modèles et poids ---
+*.h5
+*.pkl
+*.dll
+*.pyd
+*.so
+
+# TensorFlow internal files
+**/_pywrap_tensorflow_internal.pyd
+
+# XGBoost binaries
+**/xgboost.dll
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+ 
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
