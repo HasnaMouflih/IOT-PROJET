@@ -10,3 +10,4 @@ smart_plant_layer3/client_secret.json
 smart_plant_layer3/smart_key.json"smart_plant_layer3/*.json" 
 >>>>>>> af48798e79a8c66ec48a9b47efade0bb3fa425f8
 tfenv/
+smart_plant_layer3/smart.json
