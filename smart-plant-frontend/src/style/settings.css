@@ -1,0 +1,102 @@
+/* Page globale */
+.settings-page {
+  padding: 30px;
+  background: #f4f6f8;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+/* Titre principal */
+.settings-page h2 {
+  font-size: 26px;
+  margin-bottom: 25px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Message */
+.settings-message {
+  padding: 12px;
+  background: #e1f3e1;
+  color: #2b6b2b;
+  border-radius: 8px;
+  max-width: 450px;
+  margin-bottom: 20px;
+  border: 1px solid #b9e7b9;
+}
+
+/* Carte */
+.settings-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 450px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+  flex: 1; /* Permet de partager l'espace entre les cartes */
+}
+
+/* Inputs */
+.settings-input {
+  width: 100%;
+  padding: 12px; /* tu peux ajuster pour l’espace interne */
+  border-radius: 10px; /* plus aucun arrondi pour toucher la carte */
+  border: 1px solid #ccc;
+  margin-bottom: 10px; /* optionnel : moins d’espace avec le label ou suivant */
+  box-sizing: border-box; /* inclut padding et border dans la largeur */
+}
+
+
+/* Labels */
+.settings-card label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Boutons */
+.btn {
+  width: 100%;
+  padding: 12px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.btn:hover {
+  background: #45a049;
+}
+
+.btn-danger {
+  width: 100%;
+  padding: 12px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.btn-danger:hover {
+  background: #b71c1c;
+}
+
+/* Sous-titres */
+.settings-card h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  color: #4caf50;
+}
+
+/* Conteneur pour les deux cartes côte à côte */
+.settings-cards-row {
+  display: flex;
+  gap: 20px; /* espace entre les cartes */
+  flex-wrap: wrap; /* pour que ça reste responsive */
+}
