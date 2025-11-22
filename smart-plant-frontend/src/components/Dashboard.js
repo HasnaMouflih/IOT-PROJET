@@ -6,9 +6,15 @@ import RealtimeMeasureCard from "../components/RealtimeMeasureCard";
 import ChartsSection from "../components/ChartsSection";
 import CommandPanel from "../components/CommandPanel";
 import AiPanel from "../components/AiPanel";
+import NotificationsPanel from "../components/NotificationsPanel";
 import "../style/dashboard.css";
-import HistoryTable from "../components/HistoryTable"
-import { getPlantsList, getPlantState } from "../services/PlantServices.js";
+import PlantHistoryGrid from "../components/HistoryTable";
+import axios from "axios";
+import { useLocation } from "react-router-dom";
+import Settings from "./Settings";
+
+const API_BASE_URL = "http://localhost:5000"; // Ton API Flask
+
 
 function Dashboard() {
   const [activeItem, setActiveItem] = useState("plant");
@@ -16,17 +22,29 @@ function Dashboard() {
   const [plants, setPlants] = useState([]);
   const [plantData, setPlantData] = useState(null);
   const [commandStats, setCommandStats] = useState({
-      water: 0,
-      light_on: 0,
-      light_off: 0,
-    });
+    water: 0,
+    light_on: 0,
+    light_off: 0,
+  });
+  const location = useLocation();
 
-  
+useEffect(() => {
+    if (location.pathname.includes("settings")) setActiveItem("settings");
+}, [location]);
 useEffect(() => {
   const loadPlants = async () => {
     try {
-      const data = await getPlantsList();
-      setPlants(data);
+      const res = await axios.get(`${API_BASE_URL}/admin/all-data`);
+      const plantsData = res.data.plants || {}; // Récupère les plantes
+      // Convertir en array pour le select
+      const plantsArray = Object.keys(plantsData).map((id) => ({
+        id,
+        name: plantsData[id].name || id, // Si pas de nom, afficher l'id
+      }));
+      setPlants(plantsArray);
+
+      // Sélectionner la première plante par défaut
+      if (plantsArray.length > 0) setSelectedPlant(plantsArray[0].id);
     } catch (error) {
       console.error("Erreur lors du chargement des plantes:", error);
     }
@@ -35,17 +53,24 @@ useEffect(() => {
 }, []);
 
 
-
 useEffect(() => {
+  if (!selectedPlant) return;
+
   const loadPlant = async () => {
     try {
-      const data = await getPlantState(selectedPlant);
-      setPlantData(data);
+      const res = await axios.get(`${API_BASE_URL}/plants/${selectedPlant}/state`);
+      setPlantData(res.data);
     } catch (error) {
       console.error("Erreur lors du chargement des données de la plante:", error);
+      setPlantData(null);
     }
   };
   loadPlant();
+
+  // Optionnel : refresh toutes les X secondes pour simuler temps réel
+  const interval = setInterval(loadPlant, 5000);
+  return () => clearInterval(interval);
+
 }, [selectedPlant]);
 
 
@@ -54,22 +79,6 @@ useEffect(() => {
       case "plant":
         return (
           <div className="dashboard-content">
-         
-            <div className="plant-selector">
-              <label>Plante: </label>
-              <select
-                onChange={(e) => setSelectedPlant(e.target.value)}
-                value={selectedPlant}
-              >
-                {plants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-           
             {plantData ? (
               <>
                 <div className="measures-container">
@@ -89,31 +98,30 @@ useEffect(() => {
                   />
                   <RealtimeMeasureCard
                     title="Lumière"
-                    value={plantData.light + " lux"}
+                    value={plantData.lightLevel + " lux"}
                     icon="FaSun"
                     color="#FFD93D"
                     backcolor="#FCF9EA"
                   />
                   <RealtimeMeasureCard
-                      title="Humidité du sol"
-                      value={plantData.soilMoisture + "%"}
-                      icon="FaSeedling"
-                      color="#8D6E63"        
-                      backcolor="#F3E5AB"    
+                    title="Humidité du sol"
+                    value={plantData.soilMoisture + "%"}
+                    icon="FaSeedling"
+                    color="#8D6E63"
+                    backcolor="#F3E5AB"
                   />
                 </div>
-          
 
                 <div className="plant-overview">
-              <PlantStatusCard emotion={plantData.emotion} />
+                  <PlantStatusCard emotion={plantData.emotion} />
 
-            <CommandPanel 
-                plants={plants} 
-                selectedPlant={selectedPlant}  
-                commandStats={commandStats}
-                setCommandStats={setCommandStats} 
-            />
-            </div>
+                  <CommandPanel
+                    plants={plants}
+                    selectedPlant={selectedPlant}
+                    commandStats={commandStats}
+                    setCommandStats={setCommandStats}
+                  />
+                </div>
               </>
             ) : (
               <div className="loading-spinner">
@@ -122,25 +130,23 @@ useEffect(() => {
             )}
           </div>
         );
+
       case "statistiques":
         return (
-            <div className="dashboard-content">
-               <h2>Suivi des mesures</h2>
-                     <ChartsSection 
-                          plantData={plantData} 
-                          commandStats={commandStats}  
-                      />
-            
-            </div>
+          <div className="dashboard-content">
+            <h2>Suivi des mesures</h2>
+            <ChartsSection plantId={selectedPlant} commandStats={commandStats} />
+          </div>
         );
 
       case "history":
         return (
           <div className="dashboard-content">
             <h2>Historique des mesures</h2>
-            <HistoryTable/>
+            <PlantHistoryGrid selectedPlant={selectedPlant} />
           </div>
         );
+
       case "prediction":
         return (
           <div className="dashboard-content">
@@ -152,8 +158,8 @@ useEffect(() => {
       case "settings":
         return (
           <div className="dashboard-content">
-            <h2>Paramètres</h2>
-            <p>Modifier les réglages de la plante et de l'application.</p>
+            
+            <Settings/>
           </div>
         );
 
@@ -163,11 +169,38 @@ useEffect(() => {
   };
 
   return (
-    <div className="dashboard-container">
-      <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
-      <main className="dashboard-main">{renderContent()}</main>
-    </div>
-  );
+  <div className="dashboard-container">
+    <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
+
+    <main className="dashboard-main">
+
+      {/* 🌿 SELECTEUR GLOBAL — affiché seulement dans certaines pages */}
+      {(activeItem === "plant" ||
+        activeItem === "statistiques" ||
+        activeItem === "history") && (
+        <div className="plant-selector-global">
+          <label>Plante: </label>
+          <select
+            onChange={(e) => setSelectedPlant(e.target.value)}
+            value={selectedPlant}
+          >
+            {plants.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Contenu dynamique */}
+      {renderContent()}
+    </main>
+
+    <NotificationsPanel plantId={selectedPlant} />
+  </div>
+);
+
 }
 
 export default Dashboard;

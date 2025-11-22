@@ -1,71 +1,47 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { DataGrid } from "@mui/x-data-grid";
 import CircularProgress from "@mui/material/CircularProgress";
-import { getPlantsList, getPlantState } from "../services/PlantServices.js"; // ton service mock
 
-export default function PlantHistoryGrid() {
-  const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState("");
+export default function PlantHistoryGrid({ selectedPlant }) {
   const [allHistory, setAllHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Charger l'historique quand selectedPlant change
   useEffect(() => {
-    const loadPlants = async () => {
+    if (!selectedPlant) return;
+
+    const loadHistory = async () => {
       setLoading(true);
       try {
-        const list = await getPlantsList();
-        setPlants(list);
+        const res = await axios.get(
+          `http://127.0.0.1:5000/plants/${selectedPlant}/history`
+        );
 
-        if (list.length > 0) {
-          const defaultPlant = list[0].id;
-          setSelectedPlant(defaultPlant);
-          const plantState = await getPlantState(defaultPlant);
-          const historyList = plantState.history.map((h, index) => ({
-            id: index,
-            plantName: `Plante ${defaultPlant}`,
-            time: h.timestamp,
-            humidity: h.humidity,
-            temperature: h.temperature,
-            light: h.light,
-            soilMoisture: h.soilMoisture,
-            emotion: h.emotion,
-          }));
-          setAllHistory(historyList);
-        }
+        const history = res.data || [];
+
+        const formatted = history.map((h, index) => ({
+          id: index,
+          plantName: selectedPlant,
+          time: h.timestamp,
+          humidity: h.humidity,
+          temperature: h.temperature,
+          light: h.lightLevel,
+          soilMoisture: h.soilMoisture,
+          emotion: h.emotion,
+        }));
+
+        setAllHistory(formatted);
       } catch (err) {
-        console.error("Erreur:", err);
+        console.error("Erreur récupération history:", err);
+        setAllHistory([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadPlants();
-  }, []);
-
-  const handleChangePlant = async (e) => {
-    const deviceId = e.target.value;
-    setSelectedPlant(deviceId);
-    setLoading(true);
-    try {
-      const plantState = await getPlantState(deviceId);
-      const historyList = plantState.history.map((h, index) => ({
-        id: index,
-        plantName: `Plante ${deviceId}`,
-        time: h.timestamp,
-        humidity: h.humidity,
-        temperature: h.temperature,
-        light: h.light,
-        soilMoisture: h.soilMoisture,
-        emotion: h.emotion,
-      }));
-      setAllHistory(historyList);
-    } catch (err) {
-      console.error(err);
-      setAllHistory([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadHistory();
+  }, [selectedPlant]);
 
   const columns = [
     { field: "plantName", headerName: "Plante", flex: 1 },
@@ -87,19 +63,6 @@ export default function PlantHistoryGrid() {
 
   return (
     <div style={{ height: 500, width: "100%" }}>
-      {/* Selecteur de plante */}
-      <div style={{ marginBottom: 16 }}>
-        <label>Choisir une plante : </label>
-        <select value={selectedPlant} onChange={handleChangePlant}>
-          {plants.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* DataGrid avec toolbar, recherche, impression et téléchargement */}
       <DataGrid
         rows={allHistory}
         columns={columns}
